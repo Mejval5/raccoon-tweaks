@@ -106,11 +106,10 @@ export function registerSettings() {
     default: false,
   });
 
+  // Per-user, controlled from the generate dialog's checkbox.
   game.settings.register(MODULE_ID, SETTINGS.AI_TRANSPARENT, {
-    name: t("aiTransparent.name"),
-    hint: t("aiTransparent.hint"),
-    scope: "world",
-    config: true,
+    scope: "client",
+    config: false,
     type: Boolean,
     default: true,
   });

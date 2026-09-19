@@ -59,6 +59,8 @@ It opens a dialog with:
 - **Extra details**, free text
 - **Style**, prefilled from a world setting and editable per generation, with a tickbox to make the
   edit the new default
+- **Transparent background**, a per-user checkbox (remembered per browser). On gives a transparent
+  cut-out; off gives a full opaque square with a plain backdrop.
 - a gear button that opens a small dialog to set the OpenAI API key, so each user can set their own
   without opening module settings
 
@@ -105,7 +107,6 @@ So the generated portrait is framed exactly once and is ready to save.
 | Campaign context                  | world      | Otari setting preset                |
 | Default style prompt              | world      | grim low-fantasy portrait preset    |
 | Include the subject in the prompt | world      | on                                  |
-| Transparent background            | world      | on                                  |
 | Save the raw generation           | world      | on                                  |
 | Raw generation directory          | world      | empty -> Tokenizer's own upload dir |
 

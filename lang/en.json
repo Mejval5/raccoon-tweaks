@@ -37,10 +37,6 @@
         "name": "Include the subject in the prompt",
         "hint": "On by default. Adds the dialog's Subject field (prefilled from the character name) to the prompt. Turn off to leave the subject out entirely. The saved file name is unaffected."
       },
-      "aiTransparent": {
-        "name": "Transparent background",
-        "hint": "On: a cut-out subject with a transparent background, so Tokenizer's frame and mask sit cleanly around it. Off: a full opaque square with a plain generic backdrop."
-      },
       "aiSaveSource": {
         "name": "Save the raw generation",
         "hint": "Upload the unedited AI image to Foundry so you can reuse it later, separate from the composed avatar Tokenizer saves on submit."
@@ -65,6 +61,7 @@
       "fieldDetails": "Extra details (optional)",
       "detailsPlaceholder": "Half-orc harbor warden, scarred jaw, oiled leather coat, holding a boat hook",
       "fieldStyle": "Style",
+      "transparentBg": "Transparent background (off = full opaque square with a plain backdrop)",
       "saveStyle": "Save this style as the new default",
       "generate": "Generate",
       "cancel": "Cancel",

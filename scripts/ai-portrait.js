@@ -145,6 +145,10 @@ async function promptForDetails(defaults) {
         <textarea id="raccoon-ai-style" name="charStyle" rows="4">${escapeHTML(defaults.style)}</textarea>
       </div>
       <label class="raccoon-ai-checkbox">
+        <input type="checkbox" name="transparentBg" data-raccoon-action="transparent-bg" ${setting(SETTINGS.AI_TRANSPARENT) ? "checked" : ""} />
+        ${game.i18n.localize("raccoon-tweaks.ai.transparentBg")}
+      </label>
+      <label class="raccoon-ai-checkbox">
         <input type="checkbox" name="saveStyle" />
         ${game.i18n.localize("raccoon-tweaks.ai.saveStyle")}
       </label>
@@ -159,6 +163,7 @@ async function promptForDetails(defaults) {
       const root = dialog instanceof HTMLElement ? dialog : dialog?.element;
       wireKeyButton(root);
       wireSubjectToggle(root);
+      wireTransparentToggle(root);
     },
     buttons: [
       {
@@ -219,6 +224,16 @@ function wireSubjectToggle(root) {
     subject.value = toggle.checked ? (tokenName || sheetName) : (sheetName || tokenName);
     game.settings.set(MODULE_ID, SETTINGS.AI_SUBJECT_FROM_TOKEN, toggle.checked)
       .catch((error) => warn("Could not save the subject source.", error));
+  });
+}
+
+function wireTransparentToggle(root) {
+  const toggle = root?.querySelector('[data-raccoon-action="transparent-bg"]');
+  if (!toggle || toggle.dataset.raccoonWired) return;
+  toggle.dataset.raccoonWired = "1";
+  toggle.addEventListener("change", () => {
+    game.settings.set(MODULE_ID, SETTINGS.AI_TRANSPARENT, toggle.checked)
+      .catch((error) => warn("Could not save the background option.", error));
   });
 }
 

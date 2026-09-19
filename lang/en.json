@@ -1,0 +1,82 @@
+{
+  "raccoon-tweaks": {
+    "settings": {
+      "seedFromAvatar": {
+        "name": "Tokenizer: seed the token from the avatar",
+        "hint": "When Tokenizer opens, build the token stack from the avatar image instead of the previously saved token PNG. Stops the frame being re-applied over an already framed token every time you open the window. Wildcard tokens keep the original behaviour."
+      },
+      "aiEnabled": {
+        "name": "Tokenizer: AI portrait button",
+        "hint": "Show the AI button in Tokenizer's Avatar column. GM only."
+      },
+      "aiKey": {
+        "name": "OpenAI API key",
+        "hint": "Stored in this browser only and never sent to other connected users. Set it on the GM machine."
+      },
+      "aiModel": {
+        "name": "OpenAI image model",
+        "hint": "For example gpt-image-1-mini, gpt-image-1, gpt-image-1.5 or gpt-image-2. Mini is the cheapest and is usually enough for a token."
+      },
+      "aiSize": {
+        "name": "Image size",
+        "hint": "Square is the right shape for a token."
+      },
+      "aiQuality": {
+        "name": "Image quality",
+        "hint": "Higher quality costs more per image."
+      },
+      "aiCampaign": {
+        "name": "Campaign context",
+        "hint": "Added before the style in every prompt to ground portraits in a shared setting. Leave empty to use the module's built-in default."
+      },
+      "aiStyle": {
+        "name": "Default style prompt",
+        "hint": "The starting style for each generation, editable per portrait in the dialog. Leave empty to use the module's built-in default."
+      },
+      "aiIncludeName": {
+        "name": "Include the subject in the prompt",
+        "hint": "On by default. Adds the dialog's Subject field (prefilled from the character name) to the prompt. Turn off to leave the subject out entirely. The saved file name is unaffected."
+      },
+      "aiTransparent": {
+        "name": "Transparent background",
+        "hint": "On: a cut-out subject with a transparent background, so Tokenizer's frame and mask sit cleanly around it. Off: a full opaque square with a plain generic backdrop."
+      },
+      "aiSaveSource": {
+        "name": "Save the raw generation",
+        "hint": "Upload the unedited AI image to Foundry so you can reuse it later, separate from the composed avatar Tokenizer saves on submit."
+      },
+      "aiSaveDirectory": {
+        "name": "Raw generation directory",
+        "hint": "Leave empty to use Tokenizer's own upload directory for this actor type."
+      }
+    },
+    "ai": {
+      "button": "AI",
+      "dialogTitle": "Generate a portrait",
+      "apiKeyConfigure": "Set OpenAI API key",
+      "apiKeyPrompt": "OpenAI API key",
+      "apiKeyLabel": "OpenAI API key",
+      "apiKeyHint": "Stored in this browser only and never sent to other connected users. Each user sets their own.",
+      "apiKeySave": "Save key",
+      "apiKeySaved": "OpenAI API key saved.",
+      "fieldSubject": "Subject (what to draw)",
+      "subjectPlaceholder": "cave bear, middle-aged human sailor, elf child",
+      "subjectFromToken": "Name the subject from the token (off = character sheet name)",
+      "fieldDetails": "Extra details (optional)",
+      "detailsPlaceholder": "Half-orc harbor warden, scarred jaw, oiled leather coat, holding a boat hook",
+      "fieldStyle": "Style",
+      "saveStyle": "Save this style as the new default",
+      "generate": "Generate",
+      "cancel": "Cancel",
+      "generating": "Generating portrait, this takes 10 to 40 seconds...",
+      "done": "Portrait generated. Avatar layer added and the token rebuilt.",
+      "noKey": "No OpenAI API key set. Click the gear icon in the portrait dialog to add one.",
+      "failed": "Portrait generation failed: {error}",
+      "saveFailed": "Portrait generated but the raw file was not saved: {error}"
+    },
+    "quickToken": {
+      "avatarFrame": "AVATAR + FRAME",
+      "noAvatar": "No avatar image loaded to build the token from."
+    }
+  }
+}

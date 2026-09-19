@@ -1,9 +1,40 @@
 {
   "id": "raccoon-tweaks",
   "title": "Raccoon Tweaks",
-  "version": "0.1.0",
-  "compatibility": { "minimum": "13", "verified": "13" },
-  "esmodules": ["scripts/main.js"],
+  "description": "Personal quality-of-life tweaks for the Otari PF2e world. Currently: Tokenizer token-seeding fix and OpenAI portrait generation.",
+  "version": "0.2.0",
+  "authors": [
+    {
+      "name": "Daniel Necesal",
+      "url": "https://github.com/Mejval5"
+    }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14"
+  },
+  "esmodules": [
+    "scripts/main.js"
+  ],
+  "styles": [
+    "styles/raccoon-tweaks.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "relationships": {
+    "optional": [
+      {
+        "id": "vtta-tokenizer",
+        "type": "module",
+        "reason": "Tokenizer tweaks are inert without it."
+      }
+    ]
+  },
   "url": "https://github.com/Mejval5/raccoon-tweaks",
   "manifest": "https://raw.githubusercontent.com/Mejval5/raccoon-tweaks/main/module.json",
   "download": "https://github.com/Mejval5/raccoon-tweaks/archive/refs/heads/main.zip"

@@ -1,0 +1,47 @@
+.raccoon-ai-button {
+  white-space: nowrap;
+}
+
+.raccoon-ai-button.raccoon-ai-busy {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.raccoon-ai-dialog .raccoon-ai-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 460px;
+}
+
+.raccoon-ai-dialog .raccoon-ai-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: -0.25rem;
+}
+
+.raccoon-ai-dialog .raccoon-ai-key-button {
+  flex: 0 0 auto;
+  width: auto;
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
+}
+
+.raccoon-ai-dialog .raccoon-ai-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.raccoon-ai-dialog .raccoon-ai-form textarea {
+  resize: vertical;
+  font-family: inherit;
+}
+
+.raccoon-ai-dialog .raccoon-ai-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--font-size-13, 0.8rem);
+  opacity: 0.85;
+}

@@ -111,7 +111,7 @@ export function registerSettings() {
     scope: "client",
     config: false,
     type: Boolean,
-    default: true,
+    default: false,
   });
 
   game.settings.register(MODULE_ID, SETTINGS.AI_SAVE_SOURCE, {

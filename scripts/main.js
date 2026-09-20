@@ -3,6 +3,10 @@ import { registerSettings } from "./settings.js";
 import { installTokenizerPatch, registerTokenizerTweaks } from "./tokenizer-patch.js";
 import { registerAiPortrait } from "./ai-portrait.js";
 
+Hooks.once("init",  () => console.log("PHASE init",  Math.round(performance.now())));
+Hooks.once("setup", () => console.log("PHASE setup", Math.round(performance.now())));
+Hooks.once("ready", () => console.log("PHASE ready", Math.round(performance.now())));
+
 Hooks.once("init", () => {
   registerSettings();
   installTokenizerPatch();

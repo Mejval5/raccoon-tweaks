@@ -1,4 +1,4 @@
-import { MODULE_ID, SETTINGS, parseDirectory, log, warn } from "./constants.js";
+import { MODULE_ID, SETTINGS, TOKEN_BACKGROUND_IMAGE, parseDirectory, log, warn } from "./constants.js";
 import { loadImageElement } from "./openai.js";
 
 const PATCH_FLAG = Symbol.for("raccoon-tweaks.tokenizer.patched");
@@ -92,9 +92,31 @@ export async function rebuildTokenView(app, img) {
   }
 
   await app._addBaseTokenLayers();
+  await addTokenBackground(app);
   const offset = app.addFrame || app.addMask ? app.tokenOffset : {};
   app.Token.addImageLayer(img, { ...offset, type: "original" });
   await app._addHigherTokenLayers();
+}
+
+/**
+ * Replace Tokenizer's plain white base colour layer with a bundled textured
+ * backdrop. It sits below the avatar and inherits the frame's circular mask like
+ * any lower layer, so the corners are cut away to the ring.
+ */
+async function addTokenBackground(app) {
+  let background;
+  try {
+    background = await loadImageElement(TOKEN_BACKGROUND_IMAGE);
+  } catch (error) {
+    warn("Could not load the token background image, keeping the default base.", error);
+    return;
+  }
+
+  for (const layer of [...app.Token.layers]) {
+    if (layer.type === "color" || layer.colorLayer) app.Token.removeImageLayer(layer.id);
+  }
+
+  app.Token.addImageLayer(background, { masked: true, type: "texture" });
 }
 
 /**

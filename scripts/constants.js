@@ -1,6 +1,9 @@
 export const MODULE_ID = "raccoon-tweaks";
 export const TOKENIZER_ID = "vtta-tokenizer";
 
+// Bundled textured backdrop that replaces Tokenizer's plain white base colour layer.
+export const TOKEN_BACKGROUND_IMAGE = `modules/${MODULE_ID}/assets/token-background.jpg`;
+
 export const SETTINGS = {
   SEED_FROM_AVATAR: "tokenizer-seed-from-avatar",
   AI_ENABLED: "ai-enabled",
@@ -20,8 +23,8 @@ export const SETTINGS = {
 // Single-line on purpose: these are stored as `type: String` settings, which
 // Foundry renders as a single-line input that strips newlines on save.
 export const DEFAULT_CAMPAIGN = [
-  "Set in Otari, a small timber and fishing port on a rugged, rain-washed coast of wet cliffs, boats and weathered wood.",
-  "A grounded, gritty low-fantasy world that is practical and lived-in, yet still vivid and full of life rather than grey or lifeless.",
+  "Pathfinder RPG setting. Set in Otari, a small timber and fishing port on a rugged, rain-washed coast of wet cliffs, boats and weathered wood.",
+  "A grounded, fantasy world, yet still vivid and full of life rather than grey or lifeless.",
 ].join(" ");
 
 export const DEFAULT_STYLE = [

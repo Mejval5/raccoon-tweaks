@@ -85,6 +85,7 @@ async function onGenerateClick(app, button) {
       });
     }
 
+    if (setting(SETTINGS.AI_TRANSPARENT)) removeDefaultAvatarLayers(app);
     app.Avatar?.addImageLayer(img, { activate: true });
     await rebuildTokenView(app, img);
 
@@ -96,6 +97,44 @@ async function onGenerateClick(app, button) {
     dismissNotification(notification);
     button.disabled = false;
     button.classList.remove("raccoon-ai-busy");
+  }
+}
+
+/**
+ * Drop the placeholder avatar Tokenizer seeded from the actor's default artwork,
+ * so a transparent portrait does not visibly overlap the mystery-man behind it.
+ * Only default images are removed; a real portrait the user already picked stays.
+ */
+function removeDefaultAvatarLayers(app) {
+  const view = app.Avatar;
+  if (!view?.layers?.length) return;
+
+  const defaults = new Set([...defaultAvatarPaths(app)].map(normalizeImagePath));
+  for (const layer of [...view.layers]) {
+    if (defaults.has(normalizeImagePath(layer.sourceImg))) view.removeImageLayer(layer.id);
+  }
+}
+
+function defaultAvatarPaths(app) {
+  const paths = new Set([CONST.DEFAULT_TOKEN]);
+  const actor = app.tokenOptions?.actor;
+  try {
+    const artwork = actor?.constructor?.getDefaultArtwork?.(actor.toObject());
+    if (artwork?.img) paths.add(artwork.img);
+    if (artwork?.texture?.src) paths.add(artwork.texture.src);
+  } catch (error) {
+    warn("Could not resolve the actor's default artwork.", error);
+  }
+  return paths;
+}
+
+/** Strip the origin and cache-busting query so URLs and stored paths compare equal. */
+function normalizeImagePath(source) {
+  if (!source) return "";
+  try {
+    return decodeURIComponent(new URL(source, window.location.origin).pathname).replace(/^\/+/, "");
+  } catch {
+    return source.split("?")[0].replace(/^\/+/, "");
   }
 }
 

@@ -24,6 +24,7 @@ export const SETTINGS = {
   HIDE_RESOLUTION_WARNING: "hide-resolution-warning",
   RESUME_ON_LAUNCH: "resume-on-launch",
   LAST_PAUSED: "last-paused",
+  IMPORT_FOLDERS: "import-folders",
 };
 
 // Single-line on purpose: these are stored as `type: String` settings, which

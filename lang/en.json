@@ -1,6 +1,10 @@
 {
   "raccoon-tweaks": {
     "settings": {
+      "importFolders": {
+        "name": "Compendium imports go into a folder per pack",
+        "hint": "An actor dragged from a compendium onto the map lands in an Actors folder named after its compendium (for example Bestiary 1), created if missing, instead of the root."
+      },
       "resumeOnLaunch": {
         "name": "Don't start the world paused",
         "hint": "The server launches every world paused. When the GM opens it, resume it, unless the GM had paused it on purpose before it closed."

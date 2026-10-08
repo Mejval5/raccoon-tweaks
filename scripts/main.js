@@ -5,6 +5,7 @@ import { registerAiPortrait } from "./ai-portrait.js";
 import { registerAiItemImage } from "./ai-item.js";
 import { installResolutionWarningFilter } from "./resolution-warning.js";
 import { registerLaunchPause } from "./launch-pause.js";
+import { registerImportFolders } from "./import-folders.js";
 
 Hooks.once("init",  () => console.log("PHASE init",  Math.round(performance.now())));
 Hooks.once("setup", () => console.log("PHASE setup", Math.round(performance.now())));
@@ -14,6 +15,7 @@ Hooks.once("init", () => {
   registerSettings();
   installResolutionWarningFilter();
   registerLaunchPause();
+  registerImportFolders();
   installTokenizerPatch();
   registerTokenizerTweaks();
   registerAiPortrait();

@@ -30,6 +30,15 @@ export function registerSettings() {
     default: true,
   });
 
+  game.settings.register(MODULE_ID, SETTINGS.IMPORT_FOLDERS, {
+    name: t("importFolders.name"),
+    hint: t("importFolders.hint"),
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
   // Written by the pauseGame hook, not shown in the settings sheet.
   game.settings.register(MODULE_ID, SETTINGS.LAST_PAUSED, {
     scope: "world",

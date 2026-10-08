@@ -202,6 +202,19 @@ Toggle: **Don't start the world paused** (world setting, default on).
 
 ---
 
+## 8. Compendium imports go into a folder per pack
+
+Dragging a creature from a compendium onto the map imports it into the world, and core puts it in
+the Actors root: it keeps the pack's own folder id, which does not exist in the world. Core does
+record where it came from (`_stats.compendiumSource`), so the import is filed into a top-level
+Actors folder named after the pack, e.g. **Bestiary 1**. An existing folder is set before the actor
+is created; a missing one is created first and the actor moved in. Several creatures dropped at once
+share one new folder. A drop onto a folder in the Actors sidebar keeps that folder.
+
+Toggle: **Compendium imports go into a folder per pack** (world setting, default on).
+
+---
+
 ## Install
 
 Self-hosted, container launched with `--noupdate`, so drop it in by hand:
@@ -231,6 +244,7 @@ scripts/
   ai-item.js          item sheet header button
   resolution-warning.js  drops the window-size banner
   launch-pause.js     resumes a world the launch paused
+  import-folders.js   files compendium imports into a folder per pack
 styles/raccoon-tweaks.css
 lang/en.json
 ```

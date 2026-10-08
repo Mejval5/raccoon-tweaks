@@ -61,6 +61,10 @@ It opens a dialog with:
   edit the new default
 - **Transparent background**, a per-user checkbox (remembered per browser). On gives a transparent
   cut-out; off gives a full opaque square with a plain backdrop.
+- **Skip this dialog next time**, the same idea as PF2e's roll dialogs: with it on, a click on the
+  AI button generates straight away from the defaults (subject from the name, no extra details,
+  the default style) and Shift-click opens the dialog; with it off, Shift-click skips it. Separate
+  per-user settings for Tokenizer and for item sheets, also in module settings.
 - a gear button that opens a small dialog to set the OpenAI API key, so each user can set their own
   without opening module settings
 
@@ -118,6 +122,8 @@ So the generated portrait is framed exactly once and is ready to save.
 | Save the raw generation           | world      | on                                  |
 | Raw generation directory          | world      | empty -> Tokenizer's own upload dir |
 | Item image directory              | world      | empty -> `assets/ai-items`          |
+| Tokenizer AI: skip the dialog     | **client** | off                                 |
+| Item AI: skip the dialog          | **client** | off                                 |
 
 The key is **client scoped on purpose**. Foundry ships world settings to every connected client, so
 a world-scoped key would be readable by every player at the table. Client scope keeps it in the GM

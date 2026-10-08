@@ -1,7 +1,7 @@
 import { SETTINGS, DEFAULT_CAMPAIGN, DEFAULT_STYLE, warn, log } from "./constants.js";
 import { setting } from "./settings.js";
 import { generateImage } from "./openai.js";
-import { buildPrompt, promptForDetails, uploadPng, dismissNotification } from "./ai-portrait.js";
+import { buildPrompt, getAnswers, uploadPng, dismissNotification } from "./ai-portrait.js";
 
 /**
  * An "AI" header button on item sheets. Same dialog and the same prompt as the
@@ -18,20 +18,21 @@ export function registerAiItemImage() {
       label: game.i18n.localize("raccoon-tweaks.ai.button"),
       class: "raccoon-ai-item",
       icon: "fas fa-wand-magic-sparkles",
-      onclick: () => onGenerateClick(item).catch((error) => warn("Item image failed.", error)),
+      onclick: (event) => onGenerateClick(item, event).catch((error) => warn("Item image failed.", error)),
     });
   });
 }
 
 let busy = false;
 
-async function onGenerateClick(item) {
+async function onGenerateClick(item, event) {
   if (busy) return;
 
-  const answers = await promptForDetails({
+  const answers = await getAnswers({
     subject: item.name,
     style: setting(SETTINGS.AI_STYLE) || DEFAULT_STYLE,
-  });
+    skipKey: SETTINGS.AI_SKIP_DIALOG_ITEM,
+  }, event);
   if (!answers) return;
 
   if (!setting(SETTINGS.AI_KEY)?.trim()) {

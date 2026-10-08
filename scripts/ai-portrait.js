@@ -35,13 +35,13 @@ function injectButton(app) {
   button.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    onGenerateClick(app, button);
+    onGenerateClick(app, button, event);
   });
 
   anchor.append(button);
 }
 
-async function onGenerateClick(app, button) {
+async function onGenerateClick(app, button, event) {
   const tokenName = app.tokenOptions?.name || "";
   const sheetName = app.tokenOptions?.actor?.name || "";
   const fromToken = setting(SETTINGS.AI_SUBJECT_FROM_TOKEN);
@@ -53,9 +53,10 @@ async function onGenerateClick(app, button) {
     subject: fromToken ? (tokenName || sheetName) : (sheetName || tokenName),
     campaign: setting(SETTINGS.AI_CAMPAIGN) || DEFAULT_CAMPAIGN,
     style: setting(SETTINGS.AI_STYLE) || DEFAULT_STYLE,
+    skipKey: SETTINGS.AI_SKIP_DIALOG_TOKEN,
   };
 
-  const answers = await promptForDetails(defaults);
+  const answers = await getAnswers(defaults, event);
   if (!answers) return;
 
   // Guarded here, not on open, so the dialog's gear can set the key first.
@@ -163,8 +164,19 @@ export function buildPrompt({ subject, campaign, details, style }) {
 }
 
 /**
- * @param {object} defaults  subject and style; tokenName / sheetName come only
- *                           from Tokenizer and are what show the subject-source checkbox
+ * Like PF2e's roll dialogs: with the skip setting on, a click generates straight
+ * from the defaults and Shift-click opens the dialog; with it off, the reverse.
+ */
+export async function getAnswers(defaults, event) {
+  const skip = Boolean(setting(defaults.skipKey));
+  if (skip === Boolean(event?.shiftKey)) return promptForDetails(defaults);
+  return { subject: defaults.subject, details: "", style: defaults.style, saveStyle: false };
+}
+
+/**
+ * @param {object} defaults  subject, style and skipKey (the skip-dialog setting);
+ *                           tokenName / sheetName come only from Tokenizer and are
+ *                           what show the subject-source checkbox
  */
 export async function promptForDetails(defaults) {
   const { DialogV2 } = foundry.applications.api;
@@ -197,6 +209,10 @@ export async function promptForDetails(defaults) {
       <label class="raccoon-ai-checkbox">
         <input type="checkbox" name="saveStyle" />
         ${game.i18n.localize("raccoon-tweaks.ai.saveStyle")}
+      </label>
+      <label class="raccoon-ai-checkbox">
+        <input type="checkbox" name="skipDialog" ${setting(defaults.skipKey) ? "checked" : ""} />
+        ${game.i18n.localize("raccoon-tweaks.ai.skipDialog")}
       </label>
     </div>`;
 
@@ -234,6 +250,10 @@ export async function promptForDetails(defaults) {
     await game.settings.set(MODULE_ID, SETTINGS.AI_STYLE, result.style);
   }
 
+  if (result.skipDialog !== Boolean(setting(defaults.skipKey))) {
+    await game.settings.set(MODULE_ID, defaults.skipKey, result.skipDialog);
+  }
+
   return result;
 }
 
@@ -245,6 +265,7 @@ function readForm(target) {
     details: value("charDetails"),
     style: value("charStyle"),
     saveStyle: root.querySelector('[name="saveStyle"]')?.checked ?? false,
+    skipDialog: root.querySelector('[name="skipDialog"]')?.checked ?? false,
   };
 }
 

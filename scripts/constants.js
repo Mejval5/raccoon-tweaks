@@ -19,6 +19,8 @@ export const SETTINGS = {
   AI_SAVE_SOURCE: "ai-save-source",
   AI_SAVE_DIRECTORY: "ai-save-directory",
   AI_ITEM_DIRECTORY: "ai-item-directory",
+  AI_SKIP_DIALOG_TOKEN: "ai-skip-dialog-token",
+  AI_SKIP_DIALOG_ITEM: "ai-skip-dialog-item",
   HIDE_RESOLUTION_WARNING: "hide-resolution-warning",
   RESUME_ON_LAUNCH: "resume-on-launch",
   LAST_PAUSED: "last-paused",

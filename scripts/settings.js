@@ -158,6 +158,18 @@ export function registerSettings() {
     default: "",
   });
 
+  // Per user, like PF2e's roll dialogs. Also flipped from the dialog's own checkbox.
+  for (const [key, label] of [[SETTINGS.AI_SKIP_DIALOG_TOKEN, "aiSkipDialogToken"], [SETTINGS.AI_SKIP_DIALOG_ITEM, "aiSkipDialogItem"]]) {
+    game.settings.register(MODULE_ID, key, {
+      name: t(`${label}.name`),
+      hint: t(`${label}.hint`),
+      scope: "client",
+      config: true,
+      type: Boolean,
+      default: false,
+    });
+  }
+
   game.settings.register(MODULE_ID, SETTINGS.AI_ITEM_DIRECTORY, {
     name: t("aiItemDirectory.name"),
     hint: t("aiItemDirectory.hint"),

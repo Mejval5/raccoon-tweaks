@@ -64,5 +64,5 @@ async function onGenerateClick(item) {
 }
 
 function itemDirectory() {
-  return setting(SETTINGS.AI_ITEM_DIRECTORY)?.trim() || `worlds/${game.world.id}/ai-items`;
+  return setting(SETTINGS.AI_ITEM_DIRECTORY)?.trim() || "assets/ai-items";
 }

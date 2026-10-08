@@ -117,7 +117,7 @@ So the generated portrait is framed exactly once and is ready to save.
 | Include the subject in the prompt | world      | on                                  |
 | Save the raw generation           | world      | on                                  |
 | Raw generation directory          | world      | empty -> Tokenizer's own upload dir |
-| Item image directory              | world      | empty -> `worlds/<world>/ai-items`  |
+| Item image directory              | world      | empty -> `assets/ai-items`          |
 
 The key is **client scoped on purpose**. Foundry ships world settings to every connected client, so
 a world-scoped key would be readable by every player at the table. Client scope keeps it in the GM
@@ -165,7 +165,7 @@ so it hooks `getItemSheetHeaderButtons`). GM only, behind the same **AI image bu
 
 It opens the same dialog with the same prompt; the subject is prefilled from the item name and the
 token/sheet name checkbox is not shown. The image is uploaded to **Item image directory** (default
-`worlds/<world>/ai-items`, created if missing) and set as the item's `img`. The file is named after
+`assets/ai-items`, created if missing) and set as the item's `img`. The file is named after
 the subject with diacritics stripped.
 
 ---

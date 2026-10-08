@@ -47,7 +47,7 @@
       },
       "aiItemDirectory": {
         "name": "Item image directory",
-        "hint": "Where item images from the item sheet AI button are uploaded. Created if missing. Leave empty for worlds/<world>/ai-items."
+        "hint": "Where item images from the item sheet AI button are uploaded. Created if missing. Leave empty for assets/ai-items."
       }
     },
     "ai": {

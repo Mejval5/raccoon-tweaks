@@ -170,6 +170,19 @@ the subject with diacritics stripped.
 
 ---
 
+## 6. No window-size warning
+
+Foundry shows a permanent red banner when the effective window is under 1024 x 768, which OS display
+scaling or browser zoom triggers on an ordinary laptop. It comes from the private
+`ClientIssues#validateResolution` and has no setting. Core passes the unlocalised key
+(`ERROR.RESOLUTION.Screen` / `Scale` / `Window`) to `ui.notifications.error`, so
+`Notifications.prototype.notify` is wrapped at init and drops exactly those three messages. Every
+other notification passes through untouched.
+
+Toggle: **Hide the window-size warning** (world setting, default on).
+
+---
+
 ## Install
 
 Self-hosted, container launched with `--noupdate`, so drop it in by hand:
@@ -197,6 +210,7 @@ scripts/
   openai.js           images API client, base64 helpers
   ai-portrait.js      Tokenizer button, shared dialog, prompt and upload
   ai-item.js          item sheet header button
+  resolution-warning.js  drops the window-size banner
 styles/raccoon-tweaks.css
 lang/en.json
 ```

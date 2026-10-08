@@ -12,6 +12,15 @@ export function registerSettings() {
     default: true,
   });
 
+  game.settings.register(MODULE_ID, SETTINGS.HIDE_RESOLUTION_WARNING, {
+    name: t("hideResolutionWarning.name"),
+    hint: t("hideResolutionWarning.hint"),
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
   game.settings.register(MODULE_ID, SETTINGS.AI_ENABLED, {
     name: t("aiEnabled.name"),
     hint: t("aiEnabled.hint"),

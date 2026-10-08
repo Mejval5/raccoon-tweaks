@@ -19,6 +19,7 @@ export const SETTINGS = {
   AI_SAVE_SOURCE: "ai-save-source",
   AI_SAVE_DIRECTORY: "ai-save-directory",
   AI_ITEM_DIRECTORY: "ai-item-directory",
+  HIDE_RESOLUTION_WARNING: "hide-resolution-warning",
 };
 
 // Single-line on purpose: these are stored as `type: String` settings, which

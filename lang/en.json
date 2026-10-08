@@ -1,6 +1,10 @@
 {
   "raccoon-tweaks": {
     "settings": {
+      "hideResolutionWarning": {
+        "name": "Hide the window-size warning",
+        "hint": "Never show Foundry's red banner about a window smaller than 1024 x 768 or a zoom factor, for everyone in the world."
+      },
       "seedFromAvatar": {
         "name": "Tokenizer: seed the token from the avatar",
         "hint": "When Tokenizer opens, build the token stack from the avatar image instead of the previously saved token PNG. Stops the frame being re-applied over an already framed token every time you open the window. Wildcard tokens keep the original behaviour."

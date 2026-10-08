@@ -34,15 +34,38 @@ async function onGenerateClick(item, event) {
     skipKey: SETTINGS.AI_SKIP_DIALOG_ITEM,
   }, event);
   if (!answers) return;
+  await generateItemImage(item, answers).catch(() => { /* already reported */ });
+}
 
+/**
+ * Generate an image for an item and set it as the item's img, without the
+ * dialog. Also the module API (`game.modules.get("raccoon-tweaks").api`), so a
+ * macro or a script can give an exact English description in `details` when
+ * the name alone would be drawn wrong.
+ * @param {Item} item
+ * @param {object} [options]
+ * @param {string} [options.subject]  defaults to the item name
+ * @param {string} [options.details]  what it looks like, as precisely as needed
+ * @param {string} [options.style]    defaults to the style setting
+ * @param {boolean} [options.dryRun]  return the prompt without calling OpenAI
+ * @returns {Promise<string>} the stored image path, or the prompt on a dry run
+ */
+export async function generateItemImage(item, { subject, details = "", style, dryRun = false } = {}) {
+  const campaign = setting(SETTINGS.AI_CAMPAIGN) || DEFAULT_CAMPAIGN;
+  const answers = {
+    subject: subject?.trim() || item.name,
+    details,
+    style: style ?? (setting(SETTINGS.AI_STYLE) || DEFAULT_STYLE),
+  };
+  // A fact about the subject, not a framing: this is an item.
+  const prompt = buildPrompt({ ...answers, hint: "an item", campaign });
+  if (dryRun) return prompt;
+
+  if (busy) throw new Error("An item image is already being generated.");
   if (!setting(SETTINGS.AI_KEY)?.trim()) {
     ui.notifications.error(game.i18n.localize("raccoon-tweaks.ai.noKey"));
-    return;
+    throw new Error("No OpenAI API key set.");
   }
-
-  const campaign = setting(SETTINGS.AI_CAMPAIGN) || DEFAULT_CAMPAIGN;
-  // A fact about the subject, not a framing: the button sits on an item sheet.
-  const prompt = buildPrompt({ ...answers, hint: "an item", campaign });
   log("Prompt:", prompt);
 
   busy = true;
@@ -56,9 +79,11 @@ async function onGenerateClick(item, event) {
     const path = await uploadPng(base64, answers.subject, itemDirectory(), { create: true });
     await item.update({ img: path });
     ui.notifications.info(game.i18n.format("raccoon-tweaks.ai.itemDone", { name: item.name }));
+    return path;
   } catch (error) {
     warn(error);
     ui.notifications.error(game.i18n.format("raccoon-tweaks.ai.failed", { error: error.message }), { permanent: true });
+    throw error;
   } finally {
     dismissNotification(notification);
     busy = false;

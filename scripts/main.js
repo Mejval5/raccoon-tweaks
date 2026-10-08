@@ -2,7 +2,7 @@ import { MODULE_ID, TOKENIZER_ID, log, warn } from "./constants.js";
 import { registerSettings } from "./settings.js";
 import { installTokenizerPatch, registerTokenizerTweaks } from "./tokenizer-patch.js";
 import { registerAiPortrait } from "./ai-portrait.js";
-import { registerAiItemImage } from "./ai-item.js";
+import { registerAiItemImage, generateItemImage } from "./ai-item.js";
 import { installResolutionWarningFilter } from "./resolution-warning.js";
 import { registerLaunchPause } from "./launch-pause.js";
 import { registerImportFolders } from "./import-folders.js";
@@ -29,5 +29,6 @@ Hooks.once("ready", () => {
   }
   game.modules.get(MODULE_ID).api = {
     version: game.modules.get(MODULE_ID).version,
+    generateItemImage,
   };
 });

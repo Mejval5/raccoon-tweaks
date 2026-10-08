@@ -176,6 +176,18 @@ token/sheet name checkbox is not shown. The image is uploaded to **Item image di
 `assets/ai-items`, created if missing) and set as the item's `img`. The file is named after
 the subject with diacritics stripped.
 
+The same generation is callable without the dialog, from a macro or the console:
+
+```js
+const item = game.items.getName("Lupa s monogramem M. na rukojeti");
+await game.modules.get("raccoon-tweaks").api.generateItemImage(item, {
+  details: "A magnifying glass with a round lens in a carved bone rim; the letter M engraved on the handle.",
+});
+// options: subject (default item name), details, style (default setting), dryRun (returns the prompt)
+```
+
+Use `details` for an exact English description when the name alone would be drawn wrong.
+
 ---
 
 ## 6. No window-size warning

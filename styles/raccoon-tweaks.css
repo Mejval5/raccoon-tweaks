@@ -45,3 +45,13 @@
   font-size: var(--font-size-13, 0.8rem);
   opacity: 0.85;
 }
+
+/* PF2e HUD: the persistent HUD's effects row reserves a scrollbar gutter and
+   drew a vertical bar whenever an effect badge poked out a few pixels, with
+   nothing to scroll. Keep only the horizontal bar, and only when the row of
+   effects is really wider than the HUD. */
+#pf2e-hud-persistent [data-panel="effects"] article {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-gutter: auto;
+}

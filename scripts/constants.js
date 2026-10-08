@@ -28,9 +28,11 @@ export const SETTINGS = {
 
 // Single-line on purpose: these are stored as `type: String` settings, which
 // Foundry renders as a single-line input that strips newlines on save.
+// No palette words here ("timber", "weathered wood", "wet cliffs"): the model
+// took them as the colour scheme and every image came out brown.
 export const DEFAULT_CAMPAIGN = [
-  "Pathfinder RPG setting. Set in Otari, a small timber and fishing port on a rugged, rain-washed coast of wet cliffs, boats and weathered wood.",
-  "A grounded, fantasy world, yet still vivid and full of life rather than grey or lifeless.",
+  "Pathfinder RPG setting, around Otari, a small fishing port town on a rugged coast.",
+  "A grounded fantasy world, yet vivid, colourful and full of life.",
 ].join(" ");
 
 // One style for every subject: a creature on a token, an item, or a mimic that is
@@ -38,16 +40,17 @@ export const DEFAULT_CAMPAIGN = [
 export const DEFAULT_STYLE = [
   "Painterly digital fantasy illustration with visible brushwork, rich and vivid yet naturalistic, like a high-quality character/item painting rather than a photo, clean vector art, or anime.",
   "Three-quarter view, centred, filling the frame with a small even margin on all sides: a creature shown head and shoulders facing the viewer, an object shown whole.",
-  "Soft directional light from the upper left with a gentle warm bounce from the lower right, giving clear depth and form.",
-  "Colour is saturated and characterful but believable, with real hue variety and both cool and warm accents; never washed out, monochrome, or muddy brown, and no neon, candy colours, or glow effects.",
+  "Soft directional light from the upper left with a cool, neutral fill from the lower right and a clean neutral white balance, giving clear depth and form.",
+  "Colour is saturated and characterful but believable, with real hue variety: every material in its own true colour, cool and warm accents side by side, no overall colour cast or tint, and no neon, candy colours, or glow effects.",
   "Detailed, grounded and realistic in anatomy, material and texture, not cartoonish, glamorous, or airbrushed.",
   "Render the subject as exactly what it is.",
 ].join(" ");
 
 // The campaign text talks about a port full of people, which pulls the model
-// towards drawing a person. This keeps it to mood and materials.
+// towards drawing a person. It also must not lend its colours: "informs
+// materials" turned brass, stone and steel into the setting's wood tones.
 export const PROMPT_SETTING_SCOPE =
-  "The setting only informs mood, materials and craftsmanship; do not depict the setting, scenery or any of its people.";
+  "The setting only sets the mood; the subject's colours and materials come from the subject itself, not from the setting. Do not depict the setting, scenery or any of its people.";
 
 // Said at the start and again at the end: in the middle of a long prompt a
 // short subject ("wolf", "coins") gets outweighed and the model draws a human.
@@ -74,7 +77,7 @@ export const PROMPT_BACKGROUND_TRANSPARENT = [
 
 export const PROMPT_BACKGROUND_FILLED = [
   "Fill the entire square frame edge to edge, fully opaque, with no transparency and no cut-out.",
-  "Place the subject against a simple, plain, softly out-of-focus background: a single muted colour or gentle gradient that suits the setting, with no detailed scenery, objects, or props.",
+  "Place the subject against a simple, plain, softly out-of-focus background: a single neutral or cool muted colour or gentle gradient that contrasts with the subject, with no detailed scenery, objects, or props.",
 ].join(" ");
 
 export const PROMPT_CONSTRAINTS = [

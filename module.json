@@ -2,7 +2,7 @@
   "id": "raccoon-tweaks",
   "title": "Raccoon Tweaks",
   "description": "Personal quality-of-life tweaks for the Otari PF2e world. Currently: Tokenizer token-seeding fix and OpenAI image generation for tokens and items, hidden window-size warning, no pause on launch.",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "authors": [
     {
       "name": "Daniel Necesal",

@@ -20,6 +20,8 @@ export const SETTINGS = {
   AI_SAVE_DIRECTORY: "ai-save-directory",
   AI_ITEM_DIRECTORY: "ai-item-directory",
   HIDE_RESOLUTION_WARNING: "hide-resolution-warning",
+  RESUME_ON_LAUNCH: "resume-on-launch",
+  LAST_PAUSED: "last-paused",
 };
 
 // Single-line on purpose: these are stored as `type: String` settings, which

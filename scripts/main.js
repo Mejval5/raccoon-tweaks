@@ -4,6 +4,7 @@ import { installTokenizerPatch, registerTokenizerTweaks } from "./tokenizer-patc
 import { registerAiPortrait } from "./ai-portrait.js";
 import { registerAiItemImage } from "./ai-item.js";
 import { installResolutionWarningFilter } from "./resolution-warning.js";
+import { registerLaunchPause } from "./launch-pause.js";
 
 Hooks.once("init",  () => console.log("PHASE init",  Math.round(performance.now())));
 Hooks.once("setup", () => console.log("PHASE setup", Math.round(performance.now())));
@@ -12,6 +13,7 @@ Hooks.once("ready", () => console.log("PHASE ready", Math.round(performance.now(
 Hooks.once("init", () => {
   registerSettings();
   installResolutionWarningFilter();
+  registerLaunchPause();
   installTokenizerPatch();
   registerTokenizerTweaks();
   registerAiPortrait();

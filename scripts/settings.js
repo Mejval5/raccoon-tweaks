@@ -21,6 +21,23 @@ export function registerSettings() {
     default: true,
   });
 
+  game.settings.register(MODULE_ID, SETTINGS.RESUME_ON_LAUNCH, {
+    name: t("resumeOnLaunch.name"),
+    hint: t("resumeOnLaunch.hint"),
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
+  // Written by the pauseGame hook, not shown in the settings sheet.
+  game.settings.register(MODULE_ID, SETTINGS.LAST_PAUSED, {
+    scope: "world",
+    config: false,
+    type: Boolean,
+    default: false,
+  });
+
   game.settings.register(MODULE_ID, SETTINGS.AI_ENABLED, {
     name: t("aiEnabled.name"),
     hint: t("aiEnabled.hint"),

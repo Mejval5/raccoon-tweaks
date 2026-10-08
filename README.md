@@ -183,6 +183,17 @@ Toggle: **Hide the window-size warning** (world setting, default on).
 
 ---
 
+## 7. The world does not start paused
+
+The server launches every world paused, and core has no setting for it. The module remembers the
+pause state the GM last set (`pauseGame` hook, stored in a hidden world setting) and, when the active
+GM opens a world that is paused but was last left running, resumes it for everyone. A pause the GM
+set on purpose survives a relaunch and a reload.
+
+Toggle: **Don't start the world paused** (world setting, default on).
+
+---
+
 ## Install
 
 Self-hosted, container launched with `--noupdate`, so drop it in by hand:
@@ -211,6 +222,7 @@ scripts/
   ai-portrait.js      Tokenizer button, shared dialog, prompt and upload
   ai-item.js          item sheet header button
   resolution-warning.js  drops the window-size banner
+  launch-pause.js     resumes a world the launch paused
 styles/raccoon-tweaks.css
 lang/en.json
 ```

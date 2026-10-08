@@ -133,9 +133,10 @@ export function registerSettings() {
     default: true,
   });
 
-  // Controlled from the generate dialog's checkbox, not the settings sheet.
+  // Per user, controlled from the generate dialog's checkbox, not the settings
+  // sheet. Client scope so players, who cannot write world settings, keep theirs.
   game.settings.register(MODULE_ID, SETTINGS.AI_SUBJECT_FROM_TOKEN, {
-    scope: "world",
+    scope: "client",
     config: false,
     type: Boolean,
     default: false,

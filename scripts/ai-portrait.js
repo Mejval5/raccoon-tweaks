@@ -16,8 +16,9 @@ export function registerAiPortrait() {
 }
 
 function injectButton(app) {
-  if (!game.user.isGM) return;
+  // Anyone who owns the actor; each user brings their own key (client setting).
   if (!setting(SETTINGS.AI_ENABLED)) return;
+  if (app.tokenOptions?.actor && !app.tokenOptions.actor.isOwner) return;
 
   const root = app.element;
   if (!root || root.querySelector(`#${BUTTON_ID}`)) return;
@@ -207,10 +208,10 @@ export async function promptForDetails(defaults) {
         <input type="checkbox" name="transparentBg" data-raccoon-action="transparent-bg" ${setting(SETTINGS.AI_TRANSPARENT) ? "checked" : ""} />
         ${game.i18n.localize("raccoon-tweaks.ai.transparentBg")}
       </label>
-      <label class="raccoon-ai-checkbox">
+      ${canSetWorldDefaults() ? `<label class="raccoon-ai-checkbox">
         <input type="checkbox" name="saveStyle" />
         ${game.i18n.localize("raccoon-tweaks.ai.saveStyle")}
-      </label>
+      </label>` : ""}
       <label class="raccoon-ai-checkbox">
         <input type="checkbox" name="skipDialog" ${setting(defaults.skipKey) ? "checked" : ""} />
         ${game.i18n.localize("raccoon-tweaks.ai.skipDialog")}
@@ -247,7 +248,7 @@ export async function promptForDetails(defaults) {
 
   if (!result || result === "cancel") return null;
 
-  if (result.saveStyle && game.user.isGM) {
+  if (result.saveStyle && canSetWorldDefaults()) {
     await game.settings.set(MODULE_ID, SETTINGS.AI_STYLE, result.style);
   }
 
@@ -256,6 +257,11 @@ export async function promptForDetails(defaults) {
   }
 
   return result;
+}
+
+/** The style default is a world setting; players cannot write those. */
+function canSetWorldDefaults() {
+  return game.user.can("SETTINGS_MODIFY");
 }
 
 function readForm(target) {

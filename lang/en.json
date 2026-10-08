@@ -19,11 +19,11 @@
       },
       "aiEnabled": {
         "name": "AI image buttons",
-        "hint": "Show the AI button in Tokenizer's Avatar column and in item sheet headers. GM only."
+        "hint": "Show the AI button in Tokenizer's Avatar column and in item sheet headers, for anyone who owns the actor or item. Each user sets their own OpenAI key."
       },
       "aiKey": {
         "name": "OpenAI API key",
-        "hint": "Stored in this browser only and never sent to other connected users. Set it on the GM machine."
+        "hint": "Stored in this browser only and never sent to other connected users. Each user, players included, sets their own."
       },
       "aiModel": {
         "name": "OpenAI image model",
@@ -93,6 +93,7 @@
       "generating": "Generating image, this takes 10 to 40 seconds...",
       "done": "Portrait generated. Avatar layer added and the token rebuilt.",
       "itemDone": "Image generated and set on {name}.",
+      "noUpload": "You do not have permission to upload files, so the image could not be saved. The GM can grant Upload New Files in Configure Permissions.",
       "noKey": "No OpenAI API key set. Click the gear icon in the portrait dialog to add one.",
       "failed": "Image generation failed: {error}",
       "saveFailed": "Portrait generated but the raw file was not saved: {error}"

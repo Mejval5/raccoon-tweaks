@@ -10,7 +10,8 @@ import { buildPrompt, getAnswers, uploadPng, dismissNotification } from "./ai-po
  */
 export function registerAiItemImage() {
   Hooks.on("getItemSheetHeaderButtons", (sheet, buttons) => {
-    if (!game.user.isGM || !setting(SETTINGS.AI_ENABLED)) return;
+    // Anyone who owns the item; each user brings their own key (client setting).
+    if (!setting(SETTINGS.AI_ENABLED)) return;
     const item = sheet.document ?? sheet.item;
     if (!item?.isOwner) return;
 
@@ -62,6 +63,11 @@ export async function generateItemImage(item, { subject, details = "", style, dr
   if (dryRun) return prompt;
 
   if (busy) throw new Error("An item image is already being generated.");
+  // Checked before the paid request: without it the image is generated and then lost.
+  if (!game.user.can("FILES_UPLOAD")) {
+    ui.notifications.error(game.i18n.localize("raccoon-tweaks.ai.noUpload"));
+    throw new Error("No permission to upload files.");
+  }
   if (!setting(SETTINGS.AI_KEY)?.trim()) {
     ui.notifications.error(game.i18n.localize("raccoon-tweaks.ai.noKey"));
     throw new Error("No OpenAI API key set.");

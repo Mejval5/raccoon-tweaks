@@ -47,7 +47,8 @@ does nothing. It will not break Tokenizer.
 ## 2. AI portrait generation
 
 An **AI** button appears in Tokenizer's Avatar column header, next to `PRESETS` / `MODIFY` /
-`PASTE TARGET`. GM only.
+`PASTE TARGET`. Shown to anyone who owns the actor; each user sets their own OpenAI key, kept in
+their browser only. Saving needs Foundry's Upload New Files permission (Trusted Player and up).
 
 It opens a dialog with:
 
@@ -169,7 +170,8 @@ resetting and re-picking.
 ## 5. AI image on item sheets
 
 The same **AI** button sits in the header of every item sheet (PF2e item sheets are ApplicationV1,
-so it hooks `getItemSheetHeaderButtons`). GM only, behind the same **AI image buttons** setting.
+so it hooks `getItemSheetHeaderButtons`). Shown to anyone who owns the item, behind the same **AI
+image buttons** setting; the upload permission is checked before the paid request.
 
 It opens the same dialog with the same prompt; the subject is prefilled from the item name and the
 token/sheet name checkbox is not shown. The image is uploaded to **Item image directory** (default

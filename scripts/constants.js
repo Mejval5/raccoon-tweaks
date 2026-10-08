@@ -51,14 +51,20 @@ export const PROMPT_SETTING_SCOPE =
 
 // Said at the start and again at the end: in the middle of a long prompt a
 // short subject ("wolf", "coins") gets outweighed and the model draws a human.
-export const promptSubjectLead = (subject) =>
-  `Subject: ${subject}. The image shows ${subject}, exactly as named.`;
+// Names are often Czech, and the model draws what a foreign word sounds like:
+// "Lupa" (magnifying glass) came out as a wolf, from lupus. So it translates first.
+// `hint` is what the caller knows about the subject ("an item"), never a framing.
+export const promptSubjectLead = (subject, hint) => [
+  `Subject: ${subject}${hint ? ` (${hint})` : ""}.`,
+  "If the name is not in English, translate it first and draw what it means, not what it sounds like.",
+  `The image shows exactly that, as named.`,
+].join(" ");
 
-export const promptSubjectClose = (subject) => [
-  `Again, the subject is ${subject}. Draw exactly that and nothing else.`,
-  "An animal, beast or monster keeps its true natural body, never a human or humanoid version of it, with no clothing or props unless the details ask for them.",
-  "An object stands on its own, with no person, hands or figure holding it.",
-  "Show a person only if the subject is a person.",
+// Names no category on purpose: listing "animal, beast" here made the model
+// reach for an animal whenever it was unsure what the subject was.
+export const promptSubjectClose = (subject, hint) => [
+  `Again, the subject is ${subject}${hint ? ` (${hint})` : ""}. Draw exactly that, true to what it is, and nothing else.`,
+  "Do not turn it into a person, an animal or anything it is not, and add no figure, hands or creature that the subject does not include.",
 ].join(" ");
 
 export const PROMPT_BACKGROUND_TRANSPARENT = [

@@ -71,8 +71,10 @@ It opens a dialog with:
 The prompt is assembled from these ordered parts, joined with blank lines, with any empty part
 skipped:
 
-1. **Subject** — `Subject: <text>. The image shows <text>, exactly as named.`, included when the
-   **Include the subject in the prompt** setting is on (the default).
+1. **Subject** — `Subject: <text>.`, then an instruction to translate a non-English name and draw
+   what it means rather than what it sounds like ("Lupa", a magnifying glass, came out as a wolf from
+   *lupus*). Included when the **Include the subject in the prompt** setting is on (the default). The
+   item sheet adds `(an item)` after the name; Tokenizer adds nothing, so a mimic stays possible.
 2. **Campaign context** — world setting, describes the shared Otari setting so every image belongs
    to the same place, followed by a fixed line that it only sets mood and materials, not scenery or
    people.
@@ -80,9 +82,9 @@ skipped:
    it frames a creature head and shoulders and an object whole, and never assumes a person.
 4. **Extra details** — whatever you typed in the dialog.
 5. **Background** and **frame constraints** (below).
-6. **Subject again** — the subject repeated, with: an animal, beast or monster keeps its true body
-   and is never a human version; an object stands alone with no person or hands; a person only if
-   the subject is one.
+6. **Subject again** — the subject repeated: draw exactly that, do not turn it into a person, an
+   animal or anything it is not. It names no category to draw, because listing "animal, beast" made
+   the model pick an animal whenever it was unsure.
 
 The subject opens and closes the prompt because a short subject ("wolf", "coins") in the middle of a
 long prompt gets outweighed by the campaign and style text, and the model draws a human instead.

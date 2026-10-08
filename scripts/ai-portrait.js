@@ -147,19 +147,20 @@ function escapeHTML(value) {
   return div.innerHTML;
 }
 
-export function buildPrompt({ subject, campaign, details, style }) {
+export function buildPrompt({ subject, hint, campaign, details, style }) {
   const parts = [];
   // The subject opens and closes the prompt so an explicit non-human subject
   // (a cave bear, a pile of coins) is not drowned out by the campaign and
   // style text in between.
-  const named = setting(SETTINGS.AI_INCLUDE_NAME) ? subject?.trim() : "";
-  if (named) parts.push(promptSubjectLead(named));
+  // Trailing dots dropped so "Lupa s monogramem M." does not end in "M..".
+  const named = setting(SETTINGS.AI_INCLUDE_NAME) ? (subject ?? "").trim().replace(/\.+$/u, "") : "";
+  if (named) parts.push(promptSubjectLead(named, hint));
   if (campaign?.trim()) parts.push(`${campaign.trim()} ${PROMPT_SETTING_SCOPE}`);
   if (style?.trim()) parts.push(style.trim());
   if (details?.trim()) parts.push(details.trim());
   parts.push(setting(SETTINGS.AI_TRANSPARENT) ? PROMPT_BACKGROUND_TRANSPARENT : PROMPT_BACKGROUND_FILLED);
   parts.push(PROMPT_CONSTRAINTS);
-  if (named) parts.push(promptSubjectClose(named));
+  if (named) parts.push(promptSubjectClose(named, hint));
   return parts.join("\n\n");
 }
 

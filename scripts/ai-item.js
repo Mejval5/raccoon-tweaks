@@ -41,7 +41,8 @@ async function onGenerateClick(item, event) {
   }
 
   const campaign = setting(SETTINGS.AI_CAMPAIGN) || DEFAULT_CAMPAIGN;
-  const prompt = buildPrompt({ ...answers, campaign });
+  // A fact about the subject, not a framing: the button sits on an item sheet.
+  const prompt = buildPrompt({ ...answers, hint: "an item", campaign });
   log("Prompt:", prompt);
 
   busy = true;

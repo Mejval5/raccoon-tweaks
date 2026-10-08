@@ -65,7 +65,8 @@ It opens a dialog with:
 - **Skip this dialog next time**, the same idea as PF2e's roll dialogs: with it on, a click on the
   AI button generates straight away from the defaults (subject from the name, no extra details,
   the default style) and Shift-click opens the dialog; with it off, Shift-click skips it. Separate
-  per-user settings for Tokenizer and for item sheets, also in module settings.
+  per-user settings for Tokenizer and for item sheets, also in module settings. A right-click on
+  the AI button always opens the dialog, whatever the setting and Shift say.
 - a gear button that opens a small dialog to set the OpenAI API key, so each user can set their own
   without opening module settings
 

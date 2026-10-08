@@ -22,6 +22,21 @@ export function registerAiItemImage() {
       onclick: (event) => onGenerateClick(item, event).catch((error) => warn("Item image failed.", error)),
     });
   });
+
+  // V1 header buttons only take a left click, so the right-click (always the
+  // dialog) is wired onto the rendered button.
+  Hooks.on("renderItemSheet", (sheet) => {
+    const root = sheet.element?.[0] ?? sheet.element;
+    const button = root?.querySelector?.(".window-header .raccoon-ai-item");
+    if (!button || button.dataset.raccoonWired) return;
+    button.dataset.raccoonWired = "1";
+    const item = sheet.document ?? sheet.item;
+    button.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      onGenerateClick(item, event).catch((error) => warn("Item image failed.", error));
+    });
+  });
 }
 
 let busy = false;

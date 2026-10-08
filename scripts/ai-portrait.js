@@ -38,6 +38,12 @@ function injectButton(app) {
     event.stopPropagation();
     onGenerateClick(app, button, event);
   });
+  // Right-click always opens the dialog.
+  button.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onGenerateClick(app, button, event);
+  });
 
   anchor.append(button);
 }
@@ -168,8 +174,10 @@ export function buildPrompt({ subject, hint, campaign, details, style }) {
 /**
  * Like PF2e's roll dialogs: with the skip setting on, a click generates straight
  * from the defaults and Shift-click opens the dialog; with it off, the reverse.
+ * A right-click always opens the dialog.
  */
 export async function getAnswers(defaults, event) {
+  if (event?.type === "contextmenu") return promptForDetails(defaults);
   const skip = Boolean(setting(defaults.skipKey));
   if (skip === Boolean(event?.shiftKey)) return promptForDetails(defaults);
   return { subject: defaults.subject, details: "", style: defaults.style, saveStyle: false };

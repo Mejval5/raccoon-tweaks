@@ -59,11 +59,11 @@
       },
       "aiSkipDialogToken": {
         "name": "Tokenizer AI: skip the dialog",
-        "hint": "Clicking the AI button in Tokenizer generates straight away with the defaults. Shift-click opens the dialog. Per user."
+        "hint": "Clicking the AI button in Tokenizer generates straight away with the defaults. Shift-click or right-click opens the dialog. Per user."
       },
       "aiSkipDialogItem": {
         "name": "Item AI: skip the dialog",
-        "hint": "Clicking the AI button on an item sheet generates straight away with the defaults. Shift-click opens the dialog. Per user."
+        "hint": "Clicking the AI button on an item sheet generates straight away with the defaults. Shift-click or right-click opens the dialog. Per user."
       },
       "aiItemDirectory": {
         "name": "Item image directory",
@@ -87,7 +87,7 @@
       "fieldStyle": "Style",
       "transparentBg": "Transparent background (off = full opaque square with a plain backdrop)",
       "saveStyle": "Save this style as the new default",
-      "skipDialog": "Skip this dialog next time (Shift-click the AI button to open it again)",
+      "skipDialog": "Skip this dialog next time (Shift-click or right-click the AI button to open it again)",
       "generate": "Generate",
       "cancel": "Cancel",
       "generating": "Generating image, this takes 10 to 40 seconds...",

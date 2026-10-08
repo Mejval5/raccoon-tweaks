@@ -6,8 +6,8 @@
         "hint": "When Tokenizer opens, build the token stack from the avatar image instead of the previously saved token PNG. Stops the frame being re-applied over an already framed token every time you open the window. Wildcard tokens keep the original behaviour."
       },
       "aiEnabled": {
-        "name": "Tokenizer: AI portrait button",
-        "hint": "Show the AI button in Tokenizer's Avatar column. GM only."
+        "name": "AI image buttons",
+        "hint": "Show the AI button in Tokenizer's Avatar column and in item sheet headers. GM only."
       },
       "aiKey": {
         "name": "OpenAI API key",
@@ -44,11 +44,15 @@
       "aiSaveDirectory": {
         "name": "Raw generation directory",
         "hint": "Leave empty to use Tokenizer's own upload directory for this actor type."
+      },
+      "aiItemDirectory": {
+        "name": "Item image directory",
+        "hint": "Where item images from the item sheet AI button are uploaded. Created if missing. Leave empty for worlds/<world>/ai-items."
       }
     },
     "ai": {
       "button": "AI",
-      "dialogTitle": "Generate a portrait",
+      "dialogTitle": "Generate an image",
       "apiKeyConfigure": "Set OpenAI API key",
       "apiKeyPrompt": "OpenAI API key",
       "apiKeyLabel": "OpenAI API key",
@@ -56,7 +60,7 @@
       "apiKeySave": "Save key",
       "apiKeySaved": "OpenAI API key saved.",
       "fieldSubject": "Subject (what to draw)",
-      "subjectPlaceholder": "cave bear, middle-aged human sailor, elf child",
+      "subjectPlaceholder": "cave bear, elf child, pile of silver coins, chest mimic",
       "subjectFromToken": "Name the subject from the token (off = character sheet name)",
       "fieldDetails": "Extra details (optional)",
       "detailsPlaceholder": "Half-orc harbor warden, scarred jaw, oiled leather coat, holding a boat hook",
@@ -65,10 +69,11 @@
       "saveStyle": "Save this style as the new default",
       "generate": "Generate",
       "cancel": "Cancel",
-      "generating": "Generating portrait, this takes 10 to 40 seconds...",
+      "generating": "Generating image, this takes 10 to 40 seconds...",
       "done": "Portrait generated. Avatar layer added and the token rebuilt.",
+      "itemDone": "Image generated and set on {name}.",
       "noKey": "No OpenAI API key set. Click the gear icon in the portrait dialog to add one.",
-      "failed": "Portrait generation failed: {error}",
+      "failed": "Image generation failed: {error}",
       "saveFailed": "Portrait generated but the raw file was not saved: {error}"
     },
     "quickToken": {

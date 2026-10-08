@@ -18,6 +18,7 @@ export const SETTINGS = {
   AI_TRANSPARENT: "ai-transparent",
   AI_SAVE_SOURCE: "ai-save-source",
   AI_SAVE_DIRECTORY: "ai-save-directory",
+  AI_ITEM_DIRECTORY: "ai-item-directory",
 };
 
 // Single-line on purpose: these are stored as `type: String` settings, which
@@ -27,13 +28,32 @@ export const DEFAULT_CAMPAIGN = [
   "A grounded, fantasy world, yet still vivid and full of life rather than grey or lifeless.",
 ].join(" ");
 
+// One style for every subject: a creature on a token, an item, or a mimic that is
+// both. Nothing in here may assume the subject is a person.
 export const DEFAULT_STYLE = [
-  "Painterly digital fantasy illustration with visible brushwork, rich and vivid yet naturalistic, like a high-quality character painting rather than a photo, clean vector art, or anime.",
-  "Head-and-shoulders portrait, three-quarter view, centred and facing the viewer, filling the frame with a small even margin on all sides.",
+  "Painterly digital fantasy illustration with visible brushwork, rich and vivid yet naturalistic, like a high-quality character/item painting rather than a photo, clean vector art, or anime.",
+  "Three-quarter view, centred, filling the frame with a small even margin on all sides: a creature shown head and shoulders facing the viewer, an object shown whole.",
   "Soft directional light from the upper left with a gentle warm bounce from the lower right, giving clear depth and form.",
   "Colour is saturated and characterful but believable, with real hue variety and both cool and warm accents; never washed out, monochrome, or muddy brown, and no neon, candy colours, or glow effects.",
-  "Detailed, grounded and realistic in anatomy and texture, not cartoonish, glamorous, or airbrushed.",
-  "Render the subject as exactly what it is: if it is an animal or beast, show its true natural body with fur, hide or scales and no clothing, armour, jewellery or props unless the details explicitly ask for them.",
+  "Detailed, grounded and realistic in anatomy, material and texture, not cartoonish, glamorous, or airbrushed.",
+  "Render the subject as exactly what it is.",
+].join(" ");
+
+// The campaign text talks about a port full of people, which pulls the model
+// towards drawing a person. This keeps it to mood and materials.
+export const PROMPT_SETTING_SCOPE =
+  "The setting only informs mood, materials and craftsmanship; do not depict the setting, scenery or any of its people.";
+
+// Said at the start and again at the end: in the middle of a long prompt a
+// short subject ("wolf", "coins") gets outweighed and the model draws a human.
+export const promptSubjectLead = (subject) =>
+  `Subject: ${subject}. The image shows ${subject}, exactly as named.`;
+
+export const promptSubjectClose = (subject) => [
+  `Again, the subject is ${subject}. Draw exactly that and nothing else.`,
+  "An animal, beast or monster keeps its true natural body, never a human or humanoid version of it, with no clothing or props unless the details ask for them.",
+  "An object stands on its own, with no person, hands or figure holding it.",
+  "Show a person only if the subject is a person.",
 ].join(" ");
 
 export const PROMPT_BACKGROUND_TRANSPARENT = [

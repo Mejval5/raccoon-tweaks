@@ -2,7 +2,7 @@
 
 Personal Foundry VTT world tweaks. One module instead of a community module per annoyance.
 
-Foundry v13 / v14, system agnostic. Currently everything in here targets **Tokenizer** (`vtta-tokenizer`) and stays dormant if that module is not active.
+Foundry v13 / v14, system agnostic. Most of it targets **Tokenizer** (`vtta-tokenizer`) and stays dormant if that module is not active; the item sheet AI button (section 5) works without it.
 
 ---
 
@@ -64,18 +64,26 @@ It opens a dialog with:
 - a gear button that opens a small dialog to set the OpenAI API key, so each user can set their own
   without opening module settings
 
-The prompt is assembled from four ordered parts, joined with blank lines, with any empty part
+The prompt is assembled from these ordered parts, joined with blank lines, with any empty part
 skipped:
 
-1. **Subject** — `Subject: <text>.` from the dialog, included when the **Include the subject in the
-   prompt** setting is on (the default). It leads so an explicit non-human subject (a cave bear) is
-   not drowned out by the human-heavy campaign and style text that follows.
-2. **Campaign context** — world setting, describes the shared Otari setting so every portrait
-   belongs to the same place.
-3. **Style** — world setting, editable per generation in the dialog.
+1. **Subject** — `Subject: <text>. The image shows <text>, exactly as named.`, included when the
+   **Include the subject in the prompt** setting is on (the default).
+2. **Campaign context** — world setting, describes the shared Otari setting so every image belongs
+   to the same place, followed by a fixed line that it only sets mood and materials, not scenery or
+   people.
+3. **Style** — world setting, editable per generation in the dialog. One style for every subject:
+   it frames a creature head and shoulders and an object whole, and never assumes a person.
 4. **Extra details** — whatever you typed in the dialog.
+5. **Background** and **frame constraints** (below).
+6. **Subject again** — the subject repeated, with: an animal, beast or monster keeps its true body
+   and is never a human version; an object stands alone with no person or hands; a person only if
+   the subject is one.
 
-A **background** instruction and a hardcoded **frame constraints** block are then appended last. The
+The subject opens and closes the prompt because a short subject ("wolf", "coins") in the middle of a
+long prompt gets outweighed by the campaign and style text, and the model draws a human instead.
+
+The **background** instruction and the hardcoded **frame constraints** block come after the details. The
 background line follows the **Transparent background** setting: on asks for a transparent cut-out, off
 asks for a full opaque square with a plain generic backdrop (and the request is sent with
 `background: opaque`). The frame constraints are not editable: Tokenizer composites its own frame ring
@@ -105,10 +113,11 @@ So the generated portrait is framed exactly once and is ready to save.
 | Image size                        | world      | `1024x1024`                         |
 | Image quality                     | world      | `medium`                            |
 | Campaign context                  | world      | Otari setting preset                |
-| Default style prompt              | world      | grim low-fantasy portrait preset    |
+| Default style prompt              | world      | painterly preset, tokens and items  |
 | Include the subject in the prompt | world      | on                                  |
 | Save the raw generation           | world      | on                                  |
 | Raw generation directory          | world      | empty -> Tokenizer's own upload dir |
+| Item image directory              | world      | empty -> `worlds/<world>/ai-items`  |
 
 The key is **client scoped on purpose**. Foundry ships world settings to every connected client, so
 a world-scoped key would be readable by every player at the table. Client scope keeps it in the GM
@@ -149,6 +158,18 @@ resetting and re-picking.
 
 ---
 
+## 5. AI image on item sheets
+
+The same **AI** button sits in the header of every item sheet (PF2e item sheets are ApplicationV1,
+so it hooks `getItemSheetHeaderButtons`). GM only, behind the same **AI image buttons** setting.
+
+It opens the same dialog with the same prompt; the subject is prefilled from the item name and the
+token/sheet name checkbox is not shown. The image is uploaded to **Item image directory** (default
+`worlds/<world>/ai-items`, created if missing) and set as the item's `img`. The file is named after
+the subject with diacritics stripped.
+
+---
+
 ## Install
 
 Self-hosted, container launched with `--noupdate`, so drop it in by hand:
@@ -174,7 +195,8 @@ scripts/
   settings.js         setting registration
   tokenizer-patch.js  prototype patch, token view rebuild, UI tweaks
   openai.js           images API client, base64 helpers
-  ai-portrait.js      button, dialog, apply
+  ai-portrait.js      Tokenizer button, shared dialog, prompt and upload
+  ai-item.js          item sheet header button
 styles/raccoon-tweaks.css
 lang/en.json
 ```

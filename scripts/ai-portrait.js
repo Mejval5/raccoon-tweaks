@@ -1,4 +1,4 @@
-import { MODULE_ID, SETTINGS, DEFAULT_CAMPAIGN, DEFAULT_STYLE, PROMPT_BACKGROUND_TRANSPARENT, PROMPT_BACKGROUND_FILLED, PROMPT_CONSTRAINTS, parseDirectory, log, warn } from "./constants.js";
+import { MODULE_ID, SETTINGS, DEFAULT_CAMPAIGN, DEFAULT_STYLE, PROMPT_BACKGROUND_TRANSPARENT, PROMPT_BACKGROUND_FILLED, PROMPT_CONSTRAINTS, PROMPT_SETTING_SCOPE, promptSubjectLead, promptSubjectClose, parseDirectory, log, warn } from "./constants.js";
 import { setting } from "./settings.js";
 import { generateImage, base64ToBlob, loadImageElement } from "./openai.js";
 import { rebuildTokenView } from "./tokenizer-patch.js";
@@ -146,20 +146,27 @@ function escapeHTML(value) {
   return div.innerHTML;
 }
 
-function buildPrompt({ subject, campaign, details, style }) {
+export function buildPrompt({ subject, campaign, details, style }) {
   const parts = [];
-  // Subject leads so an explicit non-human subject (e.g. a cave bear) is not
-  // drowned out by the human-heavy campaign and style text that follows.
-  if (setting(SETTINGS.AI_INCLUDE_NAME) && subject?.trim()) parts.push(`Subject: ${subject.trim()}.`);
-  if (campaign?.trim()) parts.push(campaign.trim());
+  // The subject opens and closes the prompt so an explicit non-human subject
+  // (a cave bear, a pile of coins) is not drowned out by the campaign and
+  // style text in between.
+  const named = setting(SETTINGS.AI_INCLUDE_NAME) ? subject?.trim() : "";
+  if (named) parts.push(promptSubjectLead(named));
+  if (campaign?.trim()) parts.push(`${campaign.trim()} ${PROMPT_SETTING_SCOPE}`);
   if (style?.trim()) parts.push(style.trim());
   if (details?.trim()) parts.push(details.trim());
   parts.push(setting(SETTINGS.AI_TRANSPARENT) ? PROMPT_BACKGROUND_TRANSPARENT : PROMPT_BACKGROUND_FILLED);
   parts.push(PROMPT_CONSTRAINTS);
+  if (named) parts.push(promptSubjectClose(named));
   return parts.join("\n\n");
 }
 
-async function promptForDetails(defaults) {
+/**
+ * @param {object} defaults  subject and style; tokenName / sheetName come only
+ *                           from Tokenizer and are what show the subject-source checkbox
+ */
+export async function promptForDetails(defaults) {
   const { DialogV2 } = foundry.applications.api;
 
   const content = `
@@ -171,10 +178,10 @@ async function promptForDetails(defaults) {
         <label for="raccoon-ai-subject">${game.i18n.localize("raccoon-tweaks.ai.fieldSubject")}</label>
         <input id="raccoon-ai-subject" name="charSubject" type="text" value="${escapeHTML(defaults.subject)}" placeholder="${game.i18n.localize("raccoon-tweaks.ai.subjectPlaceholder")}" autofocus />
       </div>
-      <label class="raccoon-ai-checkbox">
+      ${defaults.tokenName === undefined ? "" : `<label class="raccoon-ai-checkbox">
         <input type="checkbox" name="subjectFromToken" data-raccoon-action="subject-source" data-token-name="${escapeHTML(defaults.tokenName)}" data-sheet-name="${escapeHTML(defaults.sheetName)}" ${defaults.fromToken ? "checked" : ""} />
         ${game.i18n.localize("raccoon-tweaks.ai.subjectFromToken")}
-      </label>
+      </label>`}
       <div class="form-group">
         <label for="raccoon-ai-details">${game.i18n.localize("raccoon-tweaks.ai.fieldDetails")}</label>
         <textarea id="raccoon-ai-details" name="charDetails" rows="3" placeholder="${game.i18n.localize("raccoon-tweaks.ai.detailsPlaceholder")}"></textarea>
@@ -323,15 +330,28 @@ async function saveSource(app, base64, name) {
   const directory = setting(SETTINGS.AI_SAVE_DIRECTORY)?.trim()
     || app.avatarUploadDirectory
     || game.settings.get("vtta-tokenizer", "image-upload-directory");
+  return uploadPng(base64, name, directory);
+}
 
+/**
+ * Upload a generated PNG named after the subject.
+ * @param {object} [options]
+ * @param {boolean} [options.create]  create missing folders on the way first
+ * @returns {Promise<string>} the stored path
+ */
+export async function uploadPng(base64, name, directory, { create = false } = {}) {
   const target = parseDirectory(directory);
   if (!target?.current) throw new Error("No upload directory configured.");
 
-  const slug = (name || "portrait").replace(/[^\w\-. ]/gu, "").trim().replace(/\s+/gu, "_") || "portrait";
+  const FPClass = foundry.applications?.apps?.FilePicker?.implementation ?? globalThis.FilePicker;
+  if (create) await ensureDirectory(FPClass, target);
+
+  // Strip diacritics first, or "Černý kamínek" comes out as "ern_kamnek".
+  const slug = (name || "portrait").normalize("NFD").replace(/[̀-ͯ]/gu, "")
+    .replace(/[^\w\-. ]/gu, "").trim().replace(/\s+/gu, "_") || "portrait";
   const fileName = `${slug}.AI.${Date.now()}.png`;
   const file = new File([base64ToBlob(base64)], fileName, { type: "image/png" });
 
-  const FPClass = foundry.applications?.apps?.FilePicker?.implementation ?? globalThis.FilePicker;
   const result = await FPClass.upload(
     target.activeSource,
     target.current,
@@ -340,11 +360,25 @@ async function saveSource(app, base64, name) {
     { notify: false },
   );
 
-  log("Saved source image to", result?.path);
-  return result?.path;
+  if (!result?.path) throw new Error("The upload returned no path.");
+  log("Saved image to", result.path);
+  return result.path;
 }
 
-function dismissNotification(notification) {
+/** Create each segment of the path in turn; one that already exists is not an error. */
+async function ensureDirectory(FPClass, target) {
+  let path = "";
+  for (const segment of target.current.split("/").filter(Boolean)) {
+    path = path ? `${path}/${segment}` : segment;
+    try {
+      await FPClass.createDirectory(target.activeSource, path, { bucket: target.bucket });
+    } catch {
+      /* already there; a real failure surfaces in the upload */
+    }
+  }
+}
+
+export function dismissNotification(notification) {
   if (!notification) return;
   try {
     if (typeof notification.remove === "function") notification.remove();

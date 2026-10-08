@@ -2,6 +2,7 @@ import { MODULE_ID, TOKENIZER_ID, log, warn } from "./constants.js";
 import { registerSettings } from "./settings.js";
 import { installTokenizerPatch, registerTokenizerTweaks } from "./tokenizer-patch.js";
 import { registerAiPortrait } from "./ai-portrait.js";
+import { registerAiItemImage } from "./ai-item.js";
 
 Hooks.once("init",  () => console.log("PHASE init",  Math.round(performance.now())));
 Hooks.once("setup", () => console.log("PHASE setup", Math.round(performance.now())));
@@ -12,6 +13,7 @@ Hooks.once("init", () => {
   installTokenizerPatch();
   registerTokenizerTweaks();
   registerAiPortrait();
+  registerAiItemImage();
   log("Initialised.");
 });
 

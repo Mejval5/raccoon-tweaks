@@ -131,6 +131,15 @@ export function registerSettings() {
     type: String,
     default: "",
   });
+
+  game.settings.register(MODULE_ID, SETTINGS.AI_ITEM_DIRECTORY, {
+    name: t("aiItemDirectory.name"),
+    hint: t("aiItemDirectory.hint"),
+    scope: "world",
+    config: true,
+    type: String,
+    default: "",
+  });
 }
 
 export function setting(key) {

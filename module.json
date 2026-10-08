@@ -1,8 +1,8 @@
 {
   "id": "raccoon-tweaks",
   "title": "Raccoon Tweaks",
-  "description": "Personal quality-of-life tweaks for the Otari PF2e world. Currently: Tokenizer token-seeding fix and OpenAI portrait generation.",
-  "version": "0.2.0",
+  "description": "Personal quality-of-life tweaks for the Otari PF2e world. Currently: Tokenizer token-seeding fix and OpenAI image generation for tokens and items.",
+  "version": "0.3.0",
   "authors": [
     {
       "name": "Daniel Necesal",

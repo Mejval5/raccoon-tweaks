@@ -44,6 +44,7 @@ export function registerDropItem() {
       if (changes?.system?.equipped?.carryType !== "dropped") return;
       if (!item.isOfType?.("physical") || !item.actor) return;
       options.raccoonDropLight = lightFor(item);
+      options.raccoonPrevCarry = item._source?.system?.equipped?.carryType ?? "worn";
     } catch (error) {
       warn("Drop pre-hook failed.", error);
     }
@@ -58,7 +59,7 @@ export function registerDropItem() {
       const actor = item.actor;
       if (!actor || !["character", "npc"].includes(actor.type)) return;
       if (actor.getFlag("raccoon-tweaks", "groundPile")) return;  // never re-drop out of a pile
-      dropItem(actor, item, options.raccoonDropLight ?? null).catch((error) => {
+      dropItem(actor, item, options.raccoonDropLight ?? null, options.raccoonPrevCarry ?? "worn").catch((error) => {
         warn("Drop on ground failed.", error);
         ui.notifications.error(game.i18n.format("raccoon-tweaks.drop.failed", { error: error.message }));
       });
@@ -68,42 +69,80 @@ export function registerDropItem() {
   });
 }
 
-async function dropItem(actor, item, light) {
+async function dropItem(actor, item, light, prevCarry) {
   const token = actor.getActiveTokens(true, true)[0];
   if (!token || !canvas.scene) {
     ui.notifications.warn(game.i18n.localize("raccoon-tweaks.drop.noToken"));
     return;
   }
 
+  // The Torch module (game.Torch) lights tokens from its own table and writes
+  // the light into the token; PF2e's rule toggle knows nothing about it. If the
+  // dropped item is the module's current, lit source, that light goes to the
+  // ground and the owner is extinguished through the module so its state stays
+  // consistent.
+  const torch = await torchModuleState(item, token);
+  if (torch) light = torch.light;
+
   const pile = await groundPileAt(token, { img: item.img, light });
 
-  // PF2e's own transfer keeps identity and stacks; the whole stack goes, as "I drop it" means.
-  await actor.transferItemToActor(pile.actor, item, item.quantity);
+  if (torch) {
+    await game.Torch.extinguish(torch.sceneId, torch.tokenId);
+    if (torch.consumedAtLight) {
+      // The module already took one torch when it was lit: that burning torch
+      // is what lands on the ground. The stack in the pack is left as it was.
+      const copy = item.toObject();
+      delete copy._id;
+      copy.system.quantity = 1;
+      copy.system.equipped = { carryType: "worn", handsHeld: 0, invested: null };
+      await pile.actor.createEmbeddedDocuments("Item", [copy], { raccoonStack: true });
+      await item.update({ "system.equipped.carryType": prevCarry, "system.equipped.handsHeld": prevCarry === "held" ? 1 : 0 }, { raccoonStack: true });
+    } else {
+      // Nothing was consumed: the lit torch is one unit of the dropped stack.
+      // PF2e marked the whole stack dropped; whatever stays in the pack goes
+      // back to how it was carried.
+      await actor.transferItemToActor(pile.actor, item, 1);
+      const rest = actor.items.get(item.id);
+      if (rest) await rest.update({ "system.equipped.carryType": prevCarry, "system.equipped.handsHeld": prevCarry === "held" ? 1 : 0 }, { raccoonStack: true });
+    }
+  } else {
+    // PF2e's own transfer keeps identity and stacks; the whole stack goes, as "I drop it" means.
+    await actor.transferItemToActor(pile.actor, item, item.quantity);
+  }
 
   // An existing pile gets the light only if it had none.
   if (!pile.created && light && !(pile.token.light.bright || pile.token.light.dim)) {
     await pile.token.update({ light, "flags.raccoon-tweaks.lightFrom": item.slug ?? item.name });
   }
 
-  // PF2e can leave the item's light written into the owner's token when the
-  // lit item leaves by transfer rather than by toggle. If the token's stored
-  // light is exactly the dropped light and no light rule remains active, it is
-  // that leftover: clear it.
-  if (light) await clearLeftoverLight(actor, token, light);
-
   log(`Dropped ${item.name} x${item.quantity} at ${token.x},${token.y}.`);
   ui.notifications.info(game.i18n.format("raccoon-tweaks.drop.done", { item: item.name }));
 }
 
-async function clearLeftoverLight(actor, token, light) {
-  const stillLit = actor.rules?.some((r) => r.key === "TokenLight" && !r.ignored);
-  if (stillLit) return;
-  const stored = token._source?.light ?? token.light;
-  if (!stored || (stored.bright !== light.bright || stored.dim !== light.dim)) return;
-  if (!(stored.bright || stored.dim)) return;
-  const proto = actor.prototypeToken?.light ?? { bright: 0, dim: 0 };
-  await token.update({ light: { bright: proto.bright ?? 0, dim: proto.dim ?? 0 } });
-  log(`Cleared leftover light on ${token.name}.`);
+/**
+ * The Torch module's view of this drop, or null: the dropped item must be the
+ * token's current source and lit. Returns the light the module wrote into the
+ * token (its full config, colour and animation included), the ids its API
+ * wants, and whether the module already consumed a unit when it was lit.
+ */
+async function torchModuleState(item, token) {
+  const T = game.Torch;
+  if (!T || !token?.parent) return null;
+  try {
+    const sceneId = token.parent.id;
+    const tokenId = token.id;
+    const [state, source] = await Promise.all([T.currentState(sceneId, tokenId), T.currentSource(sceneId, tokenId)]);
+    if (!state || state === "off" || !source || source !== item.name) return null;
+    const stored = foundry.utils.deepClone(token._source?.light ?? {});
+    if (!(stored.bright || stored.dim)) return null;
+    const key = game.user.isGM ? "gmUsesInventory" : "playerUsesInventory";
+    let consumedAtLight = false;
+    try { consumedAtLight = Boolean(game.settings.get("torch", key)); } catch { /* setting absent */ }
+    return { light: stored, sceneId, tokenId, consumedAtLight };
+  } catch (error) {
+    warn("Torch module state unavailable.", error);
+    return null;
+  }
 }
 
 /** The loot token in this square, or a new one. */

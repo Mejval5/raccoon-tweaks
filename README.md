@@ -264,10 +264,17 @@ an identical stack; a torch picked up lit arrives extinguished, because the lit 
 its rules is what stops PF2e from stacking it. Weapons with runes, invested items, containers and
 items identified differently are left alone.
 
+**Torch module.** If the Torch module (`game.Torch`) lit the token, its light is written into the
+token document and PF2e's rule toggle knows nothing about it. When the dropped item is the module's
+current, lit source, that written light (colour and animation included) goes onto the pile and the
+owner is extinguished through the module's API so its state stays consistent. Accounting follows
+the module's own model: the GM (who does not consume torches) drops one unit of the stack; a player
+already burned one when lighting, so the burning torch is created on the ground and the stack in
+the pack is left as it was. Re-lighting after pick-up is the module's HUD button again.
+
 Hooks act only in the browser tab where the change was made (pre-hooks stamp a per-tab id), so
 the same user open in two tabs does not run a drop twice. When a pile empties its light is
-cleared, since a hidden token still lights the map for the GM. If the owner's token has the
-dropped item's exact light stored on it and no light rule remains, that leftover is cleared too.
+cleared, since a hidden token still lights the map for the GM.
 
 ## 11. Performance meter (GM)
 

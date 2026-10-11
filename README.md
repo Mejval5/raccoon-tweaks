@@ -238,15 +238,29 @@ that click happens the moment the dialog renders. Hold Shift while it opens to l
 browser, default off. A toggle sits in the Token scene controls (fast-forward icon) so the GM can
 flip it mid-session.
 
-## 10. Drop on ground
+## 10. Dropped means on the ground
 
-Right-click a physical item in a character or NPC inventory: **Drop on ground**. The item moves
-into a loot actor (name from the **Drop on ground: pile name** setting, default "Na zemi"), one
-per square, placed at the character's feet as a half-size token with the item's image. An item
-with a `TokenLight` rule element whose predicate holds (an everlight crystal always, a torch only
-while lit) puts that light on the ground token, so a dropped light keeps lighting the room.
-Stacks ask how many. Picking up is the normal drag from the loot sheet; the pile hides itself when
-empty (`hiddenWhenEmpty`). Players need at least Limited on the pile, which PF2e sets on create.
+PF2e's inventory carry menu has a **Dropped** state (grip-lines icon) that already means "not on
+the body": the item's rule elements stop applying, so a dropped light goes dark in hand. This
+makes the state physical. Any physical item on a character or NPC that becomes `dropped` moves
+into a loot actor (name from **Dropped items: pile name**, default "Na zemi"), one per square,
+placed at the owner's feet as a half-size token with the item's image. An item with a
+`TokenLight` rule element whose predicate holds (an everlight crystal always, a torch only while
+lit) puts that light on the ground token, so the room stays lit. The whole stack goes.
+
+Because the hook watches the carry state and not a button, every path works: the menu, a macro,
+and Workbench's **drop held items when unconscious**, so a downed character's torch rolls onto
+the floor by itself. Picking up is the normal drag from the loot sheet; the pile hides itself when
+empty. Players need at least Limited on the pile, which PF2e sets on create.
+
+## 10a. One in the hand, the rest in the pack
+
+PF2e keeps "4 torches" as one item, so holding it holds all four and dropping it drops all four.
+When a stack with quantity > 1 becomes **held**, one is split off as its own held item and the
+rest keep their previous state (worn or stowed). When a held single item goes back to worn or
+stowed and an identical stack in that state exists, it merges back in. Dropping a held single
+then drops just that one. Weapons with runes, invested items, containers and items identified
+differently are left alone.
 
 ## 11. Performance meter (GM)
 
@@ -294,7 +308,8 @@ scripts/
   launch-pause.js     resumes a world the launch paused
   import-folders.js   files compendium imports into a folder per pack
   visioner-autoaccept.js  clicks Apply All on Visioner dialogs
-  drop-item.js        drop an inventory item on the ground, with its light
+  drop-item.js        Dropped carry state -> loot pile at the owner's feet, with its light
+  stack-split.js      held splits one off a stack, worn/stowed merges it back
   perf-meter.js       GM performance panel with hook attribution
 styles/raccoon-tweaks.css
 lang/en.json

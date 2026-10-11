@@ -8,6 +8,7 @@ import { registerLaunchPause } from "./launch-pause.js";
 import { registerImportFolders } from "./import-folders.js";
 import { registerVisionerAutoAccept } from "./visioner-autoaccept.js";
 import { registerDropItem } from "./drop-item.js";
+import { registerStackSplit } from "./stack-split.js";
 import { installPerfMeter } from "./perf-meter.js";
 
 Hooks.once("init",  () => console.log("PHASE init",  Math.round(performance.now())));
@@ -21,6 +22,7 @@ Hooks.once("init", () => {
   registerImportFolders();
   registerVisionerAutoAccept();
   registerDropItem();
+  registerStackSplit();
   installPerfMeter();
   installTokenizerPatch();
   registerTokenizerTweaks();

@@ -74,8 +74,8 @@
         "hint": "When PF2e Visioner opens a preview or override-validation dialog, click Apply All for you. Hold Shift while it opens to see it. Per browser; also a toggle in the Token controls."
       },
       "dropPileName": {
-        "name": "Drop on ground: pile name",
-        "hint": "Name of the loot actor created when an item is dropped on the ground. One per square."
+        "name": "Dropped items: pile name",
+        "hint": "Name of the loot actor created when an item is set to Dropped in the inventory carry menu. One per square; it hides itself when empty."
       },
       "perfMeter": {
         "name": "Performance meter (GM)",
@@ -118,10 +118,8 @@
       "toggle": "Visioner: auto-accept dialogs"
     },
     "drop": {
-      "menu": "Drop on ground",
-      "noToken": "This character has no token on the current scene.",
-      "howMany": "How many {item} to drop? (max {max})",
-      "done": "{item} dropped on the ground.",
+      "noToken": "This character has no token on the current scene, so the dropped item stays in the inventory.",
+      "done": "{item} is on the ground.",
       "failed": "Drop failed: {error}"
     },
     "perf": {

@@ -2,81 +2,71 @@ import { SETTINGS, log, warn } from "./constants.js";
 import { setting } from "./settings.js";
 
 /**
- * "Drop on ground" in the inventory context menu. The item moves into a loot
- * actor named after the setting (default "Na zemi"), one per square, whose
- * token is placed at the character's feet with the item's image. An item that
- * carries a TokenLight rule element whose predicate holds (an everlight
- * crystal always, a torch only while lit) puts that light on the ground token,
- * so a dropped light keeps lighting the room. Picking it back up is the
- * normal drag from the loot sheet.
+ * PF2e's "Dropped" carry state (the grip-lines entry in the inventory's carry
+ * menu) means "not on the body": the item's rule elements stop applying, so a
+ * dropped light goes dark in hand. This makes the state physical. Any physical
+ * item that becomes `dropped` on a character or NPC moves into a loot actor
+ * (name from the setting, default "Na zemi"), one per square, whose token sits
+ * at the owner's feet with the item's image. An item with a TokenLight rule
+ * element whose predicate holds (an everlight crystal always, a torch only
+ * while lit) puts that light on the ground token, so the room stays lit.
+ *
+ * Workbench's "drop held items when unconscious" writes the same field, so a
+ * downed character's torch rolls onto the floor by itself. Picking up is the
+ * normal drag from the loot sheet; the pile hides itself when empty.
  */
 export function registerDropItem() {
-  Hooks.on("getActorSheetEntryContext", (sheet, entries) => {
-    const actor = sheet.actor ?? sheet.document;
-    if (!actor || !["character", "npc"].includes(actor.type)) return;
-    if (!actor.isOwner) return;
-    entries.push({
-      name: game.i18n.localize("raccoon-tweaks.drop.menu"),
-      icon: '<i class="fa-solid fa-arrow-down-to-line"></i>',
-      condition: (li) => {
-        const item = itemFromEntry(actor, li);
-        return Boolean(item?.isOfType?.("physical"));
-      },
-      callback: (li) => {
-        const item = itemFromEntry(actor, li);
-        if (item) dropItem(actor, item).catch((error) => {
-          warn("Drop on ground failed.", error);
-          ui.notifications.error(game.i18n.format("raccoon-tweaks.drop.failed", { error: error.message }));
-        });
-      },
-    });
+  // The light is read before the change lands: once PF2e marks the item
+  // dropped its rule elements are suppressed, so "lit-torch" is already gone
+  // from the actor's roll options by the time updateItem fires.
+  Hooks.on("preUpdateItem", (item, changes, options, userId) => {
+    try {
+      if (changes?.system?.equipped?.carryType !== "dropped") return;
+      if (!item.isOfType?.("physical") || !item.actor) return;
+      options.raccoonDropLight = lightFor(item);
+    } catch (error) {
+      warn("Drop pre-hook failed.", error);
+    }
+  });
+
+  Hooks.on("updateItem", (item, changes, options, userId) => {
+    try {
+      if (userId !== game.user.id) return;                       // the client that made the change acts
+      if (options?.raccoonStack) return;                         // a split/merge of ours, not a drop
+      if (!item.isOfType?.("physical")) return;
+      if (changes?.system?.equipped?.carryType !== "dropped") return;
+      const actor = item.actor;
+      if (!actor || !["character", "npc"].includes(actor.type)) return;
+      if (actor.getFlag("raccoon-tweaks", "groundPile")) return;  // never re-drop out of a pile
+      dropItem(actor, item, options.raccoonDropLight ?? null).catch((error) => {
+        warn("Drop on ground failed.", error);
+        ui.notifications.error(game.i18n.format("raccoon-tweaks.drop.failed", { error: error.message }));
+      });
+    } catch (error) {
+      warn("Drop hook failed.", error);
+    }
   });
 }
 
-function itemFromEntry(actor, li) {
-  const el = li instanceof HTMLElement ? li : li?.[0];
-  const id = el?.dataset?.itemId ?? el?.closest?.("[data-item-id]")?.dataset?.itemId;
-  return id ? actor.items.get(id) : null;
-}
-
-async function dropItem(actor, item) {
-  const token = actor.getActiveTokens(true, true)[0] ?? canvas.tokens.controlled.find((t) => t.actor === actor)?.document;
+async function dropItem(actor, item, light) {
+  const token = actor.getActiveTokens(true, true)[0];
   if (!token || !canvas.scene) {
     ui.notifications.warn(game.i18n.localize("raccoon-tweaks.drop.noToken"));
     return;
   }
 
-  const quantity = item.quantity > 1 ? await askQuantity(item) : 1;
-  if (!quantity) return;
-
-  const light = lightFor(item);
-  // Token art and light go into the creation payload for a new pile, so there
-  // is no second update racing the placement.
   const pile = await groundPileAt(token, { img: item.img, light });
 
-  // PF2e's own transfer keeps the item's identity and splits stacks correctly.
-  await actor.transferItemToActor(pile.actor, item, quantity);
+  // PF2e's own transfer keeps identity and stacks; the whole stack goes, as "I drop it" means.
+  await actor.transferItemToActor(pile.actor, item, item.quantity);
 
-  // An existing pile gets the light only if it had none; its art stays the first item's.
+  // An existing pile gets the light only if it had none.
   if (!pile.created && light && !(pile.token.light.bright || pile.token.light.dim)) {
     await pile.token.update({ light, "flags.raccoon-tweaks.lightFrom": item.slug ?? item.name });
   }
 
-  log(`Dropped ${item.name} x${quantity} at ${token.x},${token.y}.`);
+  log(`Dropped ${item.name} x${item.quantity} at ${token.x},${token.y}.`);
   ui.notifications.info(game.i18n.format("raccoon-tweaks.drop.done", { item: item.name }));
-}
-
-async function askQuantity(item) {
-  const { DialogV2 } = foundry.applications.api;
-  const result = await DialogV2.prompt({
-    window: { title: game.i18n.localize("raccoon-tweaks.drop.menu") },
-    content: `<div class="form-group"><label>${game.i18n.format("raccoon-tweaks.drop.howMany", { item: item.name, max: item.quantity })}</label>
-      <input type="number" name="qty" min="1" max="${item.quantity}" value="${item.quantity}" autofocus /></div>`,
-    ok: { label: game.i18n.localize("raccoon-tweaks.drop.menu"), callback: (event, button) => Number(button.form.elements.qty.value) },
-    rejectClose: false,
-  });
-  if (!result) return 0;
-  return Math.max(1, Math.min(item.quantity, Math.floor(result)));
 }
 
 /** The loot token in this square, or a new one. */
@@ -93,6 +83,7 @@ async function groundPileAt(token, { img, light } = {}) {
     type: "loot",
     folder: folder?.id ?? null,
     system: { lootSheetType: "Loot", hiddenWhenEmpty: true },
+    flags: { "raccoon-tweaks": { groundPile: true } },
   });
   // PF2e sets Limited on create; players need at least that to pick things up.
   if ((actor.ownership?.default ?? 0) < CONST.DOCUMENT_OWNERSHIP_LEVELS.LIMITED) {
@@ -120,10 +111,9 @@ function lightFor(item) {
   if (!rule?.value) return null;
   const predicate = rule.predicate ?? [];
   if (predicate.length) {
-    // A torch's "lit-torch" style predicate: honour it only if the actor currently has that option.
+    // A torch's "lit-torch" predicate: honour it only if the owner currently has that option.
     const options = new Set(item.actor?.getRollOptions?.() ?? []);
-    const ok = predicate.every((p) => typeof p === "string" ? options.has(p) : true);
-    if (!ok) return null;
+    if (!predicate.every((p) => typeof p === "string" ? options.has(p) : true)) return null;
   }
   const v = foundry.utils.deepClone(rule.value);
   return {

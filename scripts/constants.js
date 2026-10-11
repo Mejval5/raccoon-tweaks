@@ -1,6 +1,13 @@
 export const MODULE_ID = "raccoon-tweaks";
 export const TOKENIZER_ID = "vtta-tokenizer";
 
+// One id per browser tab. The same user in two tabs would otherwise run every
+// document hook twice; pre-hooks only fire where a change was made, so they
+// stamp this and the post-hooks act only on a matching stamp.
+export const TAB_ID = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+export const stampOrigin = (options) => { options.raccoonOrigin = TAB_ID; };
+export const fromThisTab = (options) => options?.raccoonOrigin === TAB_ID;
+
 // Bundled textured backdrop that replaces Tokenizer's plain white base colour layer.
 export const TOKEN_BACKGROUND_IMAGE = `modules/${MODULE_ID}/assets/token-background.jpg`;
 

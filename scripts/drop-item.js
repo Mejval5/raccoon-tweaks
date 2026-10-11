@@ -1,4 +1,4 @@
-import { SETTINGS, log, warn } from "./constants.js";
+import { SETTINGS, log, warn, stampOrigin, fromThisTab } from "./constants.js";
 import { setting } from "./settings.js";
 
 /**
@@ -16,11 +16,31 @@ import { setting } from "./settings.js";
  * normal drag from the loot sheet; the pile hides itself when empty.
  */
 export function registerDropItem() {
+  // A pile's light came from an item; when the last item leaves, the light goes too.
+  Hooks.on("preDeleteItem", (item, options) => stampOrigin(options));
+  Hooks.on("deleteItem", (item, options, userId) => {
+    try {
+      if (!fromThisTab(options)) return;
+      const actor = item.actor;
+      if (!actor?.getFlag("raccoon-tweaks", "groundPile")) return;
+      if (actor.items.size > 0) return;
+      for (const t of actor.getActiveTokens(true, true)) {
+        if (t.light.bright || t.light.dim) {
+          t.update({ light: { bright: 0, dim: 0 }, "flags.raccoon-tweaks.-=lightFrom": null })
+            .catch((e) => warn("Could not clear the pile light.", e));
+        }
+      }
+    } catch (error) {
+      warn("Pile light cleanup failed.", error);
+    }
+  });
+
   // The light is read before the change lands: once PF2e marks the item
   // dropped its rule elements are suppressed, so "lit-torch" is already gone
   // from the actor's roll options by the time updateItem fires.
   Hooks.on("preUpdateItem", (item, changes, options, userId) => {
     try {
+      stampOrigin(options);
       if (changes?.system?.equipped?.carryType !== "dropped") return;
       if (!item.isOfType?.("physical") || !item.actor) return;
       options.raccoonDropLight = lightFor(item);
@@ -31,7 +51,7 @@ export function registerDropItem() {
 
   Hooks.on("updateItem", (item, changes, options, userId) => {
     try {
-      if (userId !== game.user.id) return;                       // the client that made the change acts
+      if (!fromThisTab(options)) return;                         // only the tab that made the change acts
       if (options?.raccoonStack) return;                         // a split/merge of ours, not a drop
       if (!item.isOfType?.("physical")) return;
       if (changes?.system?.equipped?.carryType !== "dropped") return;
@@ -65,8 +85,25 @@ async function dropItem(actor, item, light) {
     await pile.token.update({ light, "flags.raccoon-tweaks.lightFrom": item.slug ?? item.name });
   }
 
+  // PF2e can leave the item's light written into the owner's token when the
+  // lit item leaves by transfer rather than by toggle. If the token's stored
+  // light is exactly the dropped light and no light rule remains active, it is
+  // that leftover: clear it.
+  if (light) await clearLeftoverLight(actor, token, light);
+
   log(`Dropped ${item.name} x${item.quantity} at ${token.x},${token.y}.`);
   ui.notifications.info(game.i18n.format("raccoon-tweaks.drop.done", { item: item.name }));
+}
+
+async function clearLeftoverLight(actor, token, light) {
+  const stillLit = actor.rules?.some((r) => r.key === "TokenLight" && !r.ignored);
+  if (stillLit) return;
+  const stored = token._source?.light ?? token.light;
+  if (!stored || (stored.bright !== light.bright || stored.dim !== light.dim)) return;
+  if (!(stored.bright || stored.dim)) return;
+  const proto = actor.prototypeToken?.light ?? { bright: 0, dim: 0 };
+  await token.update({ light: { bright: proto.bright ?? 0, dim: proto.dim ?? 0 } });
+  log(`Cleared leftover light on ${token.name}.`);
 }
 
 /** The loot token in this square, or a new one. */

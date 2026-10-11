@@ -1,4 +1,4 @@
-import { log, warn } from "./constants.js";
+import { log, warn, stampOrigin, fromThisTab } from "./constants.js";
 
 /**
  * A held item is one object; a stack is many. PF2e keeps "4 torches" as one
@@ -9,9 +9,29 @@ import { log, warn } from "./constants.js";
  * identified-differently items and containers are left alone.
  */
 export function registerStackSplit() {
+  Hooks.on("preUpdateItem", (item, changes, options) => stampOrigin(options));
+  Hooks.on("preCreateItem", (item, data, options) => stampOrigin(options));
+
+  // An item arriving in a pack (picked up from the ground, handed over) joins
+  // an identical stack. A torch picked up lit comes back extinguished, since a
+  // lit toggle baked into its rules is what stops PF2e from stacking it.
+  Hooks.on("createItem", (item, options, userId) => {
+    try {
+      if (!fromThisTab(options)) return;
+      if (options?.raccoonStack) return;
+      if (!item.isOfType?.("physical")) return;
+      const actor = item.actor;
+      if (!actor || !["character", "npc"].includes(actor.type)) return;
+      const carry = item.system?.equipped?.carryType;
+      if (carry !== "worn" && carry !== "stowed") return;
+      mergeArrival(actor, item, carry).catch((e) => warn("Arrival merge failed.", e));
+    } catch (error) {
+      warn("Arrival hook failed.", error);
+    }
+  });
   Hooks.on("updateItem", (item, changes, options, userId) => {
     try {
-      if (userId !== game.user.id) return;
+      if (!fromThisTab(options)) return;
       if (options?.raccoonStack) return;                       // our own writes
       if (!item.isOfType?.("physical")) return;
       const actor = item.actor;
@@ -47,17 +67,46 @@ async function splitOffOne(actor, item) {
   log(`Split one ${item.name} off the stack to hold (${created?.id}).`);
 }
 
+/**
+ * Toggleable RollOption values (a torch's "lit") are state, not identity. The
+ * key is removed, not set to false: an item that was never toggled has no
+ * `value` at all, and PF2e's own stacking compares the raw JSON.
+ */
+function stripToggles(rules) {
+  return (rules ?? []).map((r) => {
+    if (r.key !== "RollOption" || !r.toggleable) return r;
+    const { value, ...rest } = r;
+    return rest;
+  });
+}
+
+function sameKind(a, b) {
+  return a.type === b.type && a.slug === b.slug && a.name === b.name
+    && !a.system?.equipped?.invested && !b.system?.equipped?.invested
+    && (a.system?.identification?.status ?? "identified") === (b.system?.identification?.status ?? "identified")
+    && (a.system?.containerId ?? null) === (b.system?.containerId ?? null)
+    && JSON.stringify(stripToggles(a.system?.rules)) === JSON.stringify(stripToggles(b.system?.rules));
+}
+
+async function mergeArrival(actor, item, carry) {
+  if (!splittable(item)) return;
+  const twin = actor.items.find((other) =>
+    other.id !== item.id && other.system?.equipped?.carryType === carry && sameKind(other, item));
+  if (!twin) {
+    // No stack to join: at least arrive extinguished.
+    const lit = (item.system?.rules ?? []).some((r) => r.key === "RollOption" && r.toggleable && r.value);
+    if (lit) await item.update({ "system.rules": stripToggles(item.system.rules) }, { raccoonStack: true });
+    return;
+  }
+  await twin.update({ "system.quantity": twin.quantity + item.quantity }, { raccoonStack: true });
+  await item.delete({ raccoonStack: true });
+  log(`Merged arriving ${item.name} x${item.quantity} into its stack (${twin.id}).`);
+}
+
 async function mergeBack(actor, item, carry) {
   if (item.quantity !== 1 || !splittable(item)) return;
   const twin = actor.items.find((other) =>
-    other.id !== item.id
-    && other.type === item.type
-    && other.slug === item.slug
-    && other.name === item.name
-    && other.system?.equipped?.carryType === carry
-    && !other.system?.equipped?.invested
-    && (other.system?.identification?.status ?? "identified") === (item.system?.identification?.status ?? "identified")
-    && (other.system?.containerId ?? null) === (item.system?.containerId ?? null));
+    other.id !== item.id && other.system?.equipped?.carryType === carry && sameKind(other, item));
   if (!twin) return;
   await twin.update({ "system.quantity": twin.quantity + 1 }, { raccoonStack: true });
   await item.delete({ raccoonStack: true });

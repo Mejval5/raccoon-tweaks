@@ -259,8 +259,15 @@ PF2e keeps "4 torches" as one item, so holding it holds all four and dropping it
 When a stack with quantity > 1 becomes **held**, one is split off as its own held item and the
 rest keep their previous state (worn or stowed). When a held single item goes back to worn or
 stowed and an identical stack in that state exists, it merges back in. Dropping a held single
-then drops just that one. Weapons with runes, invested items, containers and items identified
-differently are left alone.
+then drops just that one. An item arriving in the pack (picked up from a pile, handed over) joins
+an identical stack; a torch picked up lit arrives extinguished, because the lit toggle baked into
+its rules is what stops PF2e from stacking it. Weapons with runes, invested items, containers and
+items identified differently are left alone.
+
+Hooks act only in the browser tab where the change was made (pre-hooks stamp a per-tab id), so
+the same user open in two tabs does not run a drop twice. When a pile empties its light is
+cleared, since a hidden token still lights the map for the GM. If the owner's token has the
+dropped item's exact light stored on it and no light rule remains, that leftover is cleared too.
 
 ## 11. Performance meter (GM)
 

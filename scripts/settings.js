@@ -39,6 +39,35 @@ export function registerSettings() {
     default: true,
   });
 
+  // Per browser: the GM flips it from the Token controls mid-session.
+  game.settings.register(MODULE_ID, SETTINGS.VISIONER_AUTOACCEPT, {
+    name: t("visionerAutoaccept.name"),
+    hint: t("visionerAutoaccept.hint"),
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: false,
+  });
+
+  game.settings.register(MODULE_ID, SETTINGS.DROP_PILE_NAME, {
+    name: t("dropPileName.name"),
+    hint: t("dropPileName.hint"),
+    scope: "world",
+    config: true,
+    type: String,
+    default: "Na zemi",
+  });
+
+  // Per browser, GM only in practice (the panel is GM-only).
+  game.settings.register(MODULE_ID, SETTINGS.PERF_METER, {
+    name: t("perfMeter.name"),
+    hint: t("perfMeter.hint"),
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: false,
+  });
+
   // Written by the pauseGame hook, not shown in the settings sheet.
   game.settings.register(MODULE_ID, SETTINGS.LAST_PAUSED, {
     scope: "world",

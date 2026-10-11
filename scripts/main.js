@@ -6,6 +6,9 @@ import { registerAiItemImage, generateItemImage } from "./ai-item.js";
 import { installResolutionWarningFilter } from "./resolution-warning.js";
 import { registerLaunchPause } from "./launch-pause.js";
 import { registerImportFolders } from "./import-folders.js";
+import { registerVisionerAutoAccept } from "./visioner-autoaccept.js";
+import { registerDropItem } from "./drop-item.js";
+import { installPerfMeter } from "./perf-meter.js";
 
 Hooks.once("init",  () => console.log("PHASE init",  Math.round(performance.now())));
 Hooks.once("setup", () => console.log("PHASE setup", Math.round(performance.now())));
@@ -16,6 +19,9 @@ Hooks.once("init", () => {
   installResolutionWarningFilter();
   registerLaunchPause();
   registerImportFolders();
+  registerVisionerAutoAccept();
+  registerDropItem();
+  installPerfMeter();
   installTokenizerPatch();
   registerTokenizerTweaks();
   registerAiPortrait();

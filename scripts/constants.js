@@ -25,6 +25,9 @@ export const SETTINGS = {
   RESUME_ON_LAUNCH: "resume-on-launch",
   LAST_PAUSED: "last-paused",
   IMPORT_FOLDERS: "import-folders",
+  VISIONER_AUTOACCEPT: "visioner-autoaccept",
+  DROP_PILE_NAME: "drop-pile-name",
+  PERF_METER: "perf-meter",
 };
 
 // Single-line on purpose: these are stored as `type: String` settings, which

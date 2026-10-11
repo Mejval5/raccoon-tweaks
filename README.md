@@ -230,6 +230,39 @@ Toggle: **Compendium imports go into a folder per pack** (world setting, default
 
 ---
 
+## 9. Visioner: auto-accept its dialogs
+
+PF2e Visioner opens a preview dialog after seek, hide, sneak, point out, consequences and cover,
+and an override-validation dialog on turn change; each wants a click on Apply All. With this on,
+that click happens the moment the dialog renders. Hold Shift while it opens to look at it. Per
+browser, default off. A toggle sits in the Token scene controls (fast-forward icon) so the GM can
+flip it mid-session.
+
+## 10. Drop on ground
+
+Right-click a physical item in a character or NPC inventory: **Drop on ground**. The item moves
+into a loot actor (name from the **Drop on ground: pile name** setting, default "Na zemi"), one
+per square, placed at the character's feet as a half-size token with the item's image. An item
+with a `TokenLight` rule element whose predicate holds (an everlight crystal always, a torch only
+while lit) puts that light on the ground token, so a dropped light keeps lighting the room.
+Stacks ask how many. Picking up is the normal drag from the loot sheet; the pile hides itself when
+empty (`hiddenWhenEmpty`). Players need at least Limited on the pile, which PF2e sets on create.
+
+## 11. Performance meter (GM)
+
+A small panel (toggle in the Token controls, gauge icon, or the **Performance meter** setting):
+FPS, frame p50/p95/max, long tasks (>50 ms) per minute, JS heap, long tasks grouped by the hook
+that was running when they started, and cumulative time per hook since start. Hook attribution
+wraps `Hooks.callAll` / `Hooks.call` at init, so every module's reaction to the game is counted
+under the hook that triggered it. ⧉ copies a plain-text report; ⟲ resets. In a background tab
+Chrome stops animation frames, so the FPS row says so instead of reading 0.
+
+Per-player animations: Automated Animations already has a **client** setting
+(`autoanimations.killAllAnim`, "Automated Animations: on/off" in each player's own settings).
+Players on weak machines turn it off themselves; nothing to build here.
+
+---
+
 ## Install
 
 Self-hosted, container launched with `--noupdate`, so drop it in by hand:
@@ -260,6 +293,9 @@ scripts/
   resolution-warning.js  drops the window-size banner
   launch-pause.js     resumes a world the launch paused
   import-folders.js   files compendium imports into a folder per pack
+  visioner-autoaccept.js  clicks Apply All on Visioner dialogs
+  drop-item.js        drop an inventory item on the ground, with its light
+  perf-meter.js       GM performance panel with hook attribution
 styles/raccoon-tweaks.css
 lang/en.json
 ```

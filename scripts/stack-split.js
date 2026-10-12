@@ -23,8 +23,14 @@ export function registerStackSplit() {
       const actor = item.actor;
       if (!actor || !["character", "npc"].includes(actor.type)) return;
       const carry = item.system?.equipped?.carryType;
-      if (carry !== "worn" && carry !== "stowed") return;
-      mergeArrival(actor, item, carry).catch((e) => warn("Arrival merge failed.", e));
+      const info = { wasLit: Boolean(item.getFlag?.("raccoon-tweaks", "litOnGround")), name: item.name };
+      if (carry !== "worn" && carry !== "stowed") {
+        Hooks.callAll("raccoonItemArrived", actor, item, info);
+        return;
+      }
+      mergeArrival(actor, item, carry)
+        .then((survivor) => Hooks.callAll("raccoonItemArrived", actor, survivor ?? item, info))
+        .catch((e) => warn("Arrival merge failed.", e));
     } catch (error) {
       warn("Arrival hook failed.", error);
     }
@@ -86,21 +92,24 @@ function sameKind(a, b) {
     && (a.system?.identification?.status ?? "identified") === (b.system?.identification?.status ?? "identified")
     && (a.system?.containerId ?? null) === (b.system?.containerId ?? null)
     && JSON.stringify(stripToggles(a.system?.rules)) === JSON.stringify(stripToggles(b.system?.rules));
+  // (flags are not compared: our litOnGround marker rides along on the ground copy)
 }
 
+/** @returns the item that remains on the actor: the stack it joined, or itself */
 async function mergeArrival(actor, item, carry) {
-  if (!splittable(item)) return;
+  if (!splittable(item)) return item;
   const twin = actor.items.find((other) =>
     other.id !== item.id && other.system?.equipped?.carryType === carry && sameKind(other, item));
   if (!twin) {
     // No stack to join: at least arrive extinguished.
     const lit = (item.system?.rules ?? []).some((r) => r.key === "RollOption" && r.toggleable && r.value);
     if (lit) await item.update({ "system.rules": stripToggles(item.system.rules) }, { raccoonStack: true });
-    return;
+    return item;
   }
   await twin.update({ "system.quantity": twin.quantity + item.quantity }, { raccoonStack: true });
   await item.delete({ raccoonStack: true });
   log(`Merged arriving ${item.name} x${item.quantity} into its stack (${twin.id}).`);
+  return twin;
 }
 
 async function mergeBack(actor, item, carry) {

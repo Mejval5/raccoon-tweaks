@@ -2,7 +2,7 @@
   "id": "raccoon-tweaks",
   "title": "Raccoon Tweaks",
   "description": "Personal quality-of-life tweaks for the Otari PF2e world. Currently: Tokenizer token-seeding fix and OpenAI image generation for tokens and items, hidden window-size warning, no pause on launch.",
-  "version": "0.12.0",
+  "version": "0.13.1",
   "authors": [
     {
       "name": "Daniel Necesal",
@@ -32,6 +32,11 @@
         "id": "vtta-tokenizer",
         "type": "module",
         "reason": "Tokenizer tweaks are inert without it."
+      },
+      {
+        "id": "lib-wrapper",
+        "type": "module",
+        "reason": "Used to wrap PF2e's transferItemToActor for relight on pick-up; a direct patch is the fallback."
       }
     ]
   },

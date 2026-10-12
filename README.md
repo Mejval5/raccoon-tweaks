@@ -270,7 +270,10 @@ current, lit source, that written light (colour and animation included) goes ont
 owner is extinguished through the module's API so its state stays consistent. Accounting follows
 the module's own model: the GM (who does not consume torches) drops one unit of the stack; a player
 already burned one when lighting, so the burning torch is created on the ground and the stack in
-the pack is left as it was. Re-lighting after pick-up is the module's HUD button again.
+the pack is left as it was. A torch that was burning when dropped is marked, and when it is picked back up it relights
+in the new owner's hands through the module, with any unit the module consumed given back: that
+torch was already paid for. The module itself does not model hands: it lights by item name and
+consumes from the first torch item in inventory order, whichever is held.
 
 Hooks act only in the browser tab where the change was made (pre-hooks stamp a per-tab id), so
 the same user open in two tabs does not run a drop twice. When a pile empties its light is

@@ -16,6 +16,16 @@ import { setting } from "./settings.js";
  * normal drag from the loot sheet; the pile hides itself when empty.
  */
 export function registerDropItem() {
+  Hooks.once("setup", installTransferWrapper);
+
+  // Fired by stack-split.js once an arriving item has settled (merged or not).
+  // A torch that was burning on the ground lights up again in the new owner's
+  // hands, through the Torch module, without costing a torch.
+  Hooks.on("raccoonItemArrived", (actor, survivor, info) => {
+    if (!info?.wasLit) return;
+    relightFromGround(actor, survivor, info.name).catch((e) => warn("Relight on pick-up failed.", e));
+  });
+
   // A pile's light came from an item; when the last item leaves, the light goes too.
   Hooks.on("preDeleteItem", (item, options) => stampOrigin(options));
   Hooks.on("deleteItem", (item, options, userId) => {
@@ -95,6 +105,7 @@ async function dropItem(actor, item, light, prevCarry) {
       delete copy._id;
       copy.system.quantity = 1;
       copy.system.equipped = { carryType: "worn", handsHeld: 0, invested: null };
+      foundry.utils.setProperty(copy, "flags.raccoon-tweaks.litOnGround", true);
       await pile.actor.createEmbeddedDocuments("Item", [copy], { raccoonStack: true });
       await item.update({ "system.equipped.carryType": prevCarry, "system.equipped.handsHeld": prevCarry === "held" ? 1 : 0 }, { raccoonStack: true });
     } else {
@@ -102,6 +113,8 @@ async function dropItem(actor, item, light, prevCarry) {
       // PF2e marked the whole stack dropped; whatever stays in the pack goes
       // back to how it was carried.
       await actor.transferItemToActor(pile.actor, item, 1);
+      const onGround = pile.actor.items.find((i) => i.name === item.name && i.isOfType?.("physical"));
+      if (onGround) await onGround.setFlag("raccoon-tweaks", "litOnGround", true);
       const rest = actor.items.get(item.id);
       if (rest) await rest.update({ "system.equipped.carryType": prevCarry, "system.equipped.handsHeld": prevCarry === "held" ? 1 : 0 }, { raccoonStack: true });
     }
@@ -115,8 +128,83 @@ async function dropItem(actor, item, light, prevCarry) {
     await pile.token.update({ light, "flags.raccoon-tweaks.lightFrom": item.slug ?? item.name });
   }
 
-  log(`Dropped ${item.name} x${item.quantity} at ${token.x},${token.y}.`);
+  log(`Dropped ${item.name} at ${token.x},${token.y}.`);
   ui.notifications.info(game.i18n.format("raccoon-tweaks.drop.done", { item: item.name }));
+}
+
+/**
+ * PF2e's own stacking on pick-up updates the existing stack instead of
+ * creating an item, so no createItem fires and the ground copy's flag is
+ * discarded. The transfer itself is the reliable moment: wrap
+ * transferItemToActor and relight the receiver after a marked torch leaves a
+ * pile. libWrapper when present, a plain prototype patch otherwise.
+ */
+function installTransferWrapper() {
+  const proto = CONFIG.Actor.documentClass?.prototype;
+  if (typeof proto?.transferItemToActor !== "function") {
+    warn("transferItemToActor not found, relight on pick-up stays off.");
+    return;
+  }
+  const after = async (source, target, item, result) => {
+    try {
+      if (!source?.getFlag?.("raccoon-tweaks", "groundPile")) return;
+      if (!item?.getFlag?.("raccoon-tweaks", "litOnGround")) return;
+      if (!target || !["character", "npc"].includes(target.type)) return;
+      await relightFromGround(target, null, item.name);
+    } catch (error) {
+      warn("Relight after transfer failed.", error);
+    }
+  };
+  const path = "CONFIG.Actor.documentClass.prototype.transferItemToActor";
+  if (globalThis.libWrapper?.register) {
+    libWrapper.register("raccoon-tweaks", path, async function (wrapped, target, item, ...rest) {
+      // Read the flag before the original runs: the ground copy may be deleted by it.
+      const lit = Boolean(item?.getFlag?.("raccoon-tweaks", "litOnGround"));
+      const result = await wrapped(target, item, ...rest);
+      if (lit) await after(this, target, { name: item?.name, getFlag: () => lit }, result);
+      return result;
+    }, "WRAPPER");
+    log("transferItemToActor wrapped (libWrapper).");
+  } else {
+    const original = proto.transferItemToActor;
+    proto.transferItemToActor = async function (target, item, ...rest) {
+      const lit = Boolean(item?.getFlag?.("raccoon-tweaks", "litOnGround"));
+      const result = await original.call(this, target, item, ...rest);
+      if (lit) await after(this, target, { name: item?.name, getFlag: () => lit }, result);
+      return result;
+    };
+    log("transferItemToActor wrapped (direct).");
+  }
+}
+
+async function relightFromGround(actor, survivor, name) {
+  if (survivor?.getFlag?.("raccoon-tweaks", "litOnGround")) await survivor.unsetFlag("raccoon-tweaks", "litOnGround");
+  const T = game.Torch;
+  const token = actor.getActiveTokens(true, true)[0];
+  if (!T || !token?.parent) return;
+  const sceneId = token.parent.id, tokenId = token.id;
+  const state = await T.currentState(sceneId, tokenId);
+  if (state && state !== "off") return;                       // already carrying a light
+  const sources = await T.equippedSources(sceneId, tokenId);
+  if (!sources.includes(name)) return;
+  await T.selectSource(sceneId, tokenId, name);
+
+  // The module consumes a unit when it lights (players by default). Snapshot,
+  // light, then give back whatever it took: this torch was already paid for.
+  const before = new Map(actor.items.filter((i) => i.name === name).map((i) => [i.id, i.quantity]));
+  const template = actor.items.find((i) => i.name === name)?.toObject();
+  await T.toggle(sceneId, tokenId);
+  const after = new Map(actor.items.filter((i) => i.name === name).map((i) => [i.id, i.quantity]));
+  for (const [id, qty] of before) {
+    const now = after.get(id);
+    if (now === undefined) {
+      // consumed to zero and deleted: put one back
+      if (template) { delete template._id; template.system.quantity = 1; await actor.createEmbeddedDocuments("Item", [template], { raccoonStack: true }); }
+    } else if (now < qty) {
+      await actor.items.get(id).update({ "system.quantity": now + (qty - now) }, { raccoonStack: true });
+    }
+  }
+  log(`Relit ${name} on pick-up for ${actor.name}.`);
 }
 
 /**

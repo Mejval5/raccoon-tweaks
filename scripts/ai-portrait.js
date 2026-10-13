@@ -396,7 +396,12 @@ export async function uploadPng(base64, name, directory, { create = false } = {}
     { notify: false },
   );
 
-  if (!result?.path) throw new Error("The upload returned no path.");
+  if (!result?.path) {
+    // notify:false hides Foundry's own reason (permission, disk, proxy limit); ask once more with it on so it shows.
+    console.error("raccoon-tweaks | upload returned", result, { source: target.activeSource, dir: target.current, bytes: file.size });
+    await FPClass.upload(target.activeSource, target.current, file, { bucket: target.bucket }, { notify: true }).catch(() => null);
+    throw new Error(`The upload returned no path (${target.activeSource}:${target.current}, ${(file.size / 1048576).toFixed(1)} MB). See the console and the notification above.`);
+  }
   log("Saved image to", result.path);
   return result.path;
 }

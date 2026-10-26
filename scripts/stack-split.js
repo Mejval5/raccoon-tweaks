@@ -28,7 +28,10 @@ export function registerStackSplit() {
         Hooks.callAll("raccoonItemArrived", actor, item, info);
         return;
       }
-      mergeArrival(actor, item, carry)
+      // Back into the hands it was dropped from, if they are free; otherwise it
+      // joins the pack like anything else picked up.
+      restoreCarry(actor, item)
+        .then((restored) => restored ? item : mergeArrival(actor, item, carry))
         .then((survivor) => Hooks.callAll("raccoonItemArrived", actor, survivor ?? item, info))
         .catch((e) => warn("Arrival merge failed.", e));
     } catch (error) {
@@ -50,6 +53,33 @@ export function registerStackSplit() {
       warn("Stack hook failed.", error);
     }
   });
+}
+
+/**
+ * An item dropped by raccoon-tweaks carries how it was held (drop-item.js
+ * writes `flags.raccoon-tweaks.prevCarry` before the transfer). When it comes
+ * back to a character or NPC and was held, it goes back into the hands if that
+ * many hands are free. The flag is cleared either way, so a later drop from
+ * another owner starts clean.
+ * @returns true when the item is now held again
+ */
+async function restoreCarry(actor, item) {
+  const prev = item.getFlag?.("raccoon-tweaks", "prevCarry");
+  if (!prev) return false;
+  if (prev.carryType !== "held" || item.quantity !== 1) {
+    await item.unsetFlag("raccoon-tweaks", "prevCarry");
+    return false;
+  }
+  const inHands = actor.items.filter((i) => i.id !== item.id && i.isOfType?.("physical") && i.system?.equipped?.carryType === "held")
+    .reduce((n, i) => n + (i.system.equipped.handsHeld || 1), 0);
+  const need = Math.min(2, Math.max(1, prev.handsHeld || 1));
+  if (inHands + need > 2) {
+    await item.unsetFlag("raccoon-tweaks", "prevCarry");
+    return false;
+  }
+  await item.update({ "system.equipped.carryType": "held", "system.equipped.handsHeld": need, "flags.raccoon-tweaks.-=prevCarry": null }, { raccoonStack: true });
+  log(`${item.name} is back in ${actor.name}'s hand${need > 1 ? "s" : ""}.`);
+  return true;
 }
 
 function splittable(item) {

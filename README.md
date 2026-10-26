@@ -244,14 +244,22 @@ PF2e's inventory carry menu has a **Dropped** state (grip-lines icon) that alrea
 the body": the item's rule elements stop applying, so a dropped light goes dark in hand. This
 makes the state physical. Any physical item on a character or NPC that becomes `dropped` moves
 into a loot actor (name from **Dropped items: pile name**, default "Na zemi"), one per square,
-placed at the owner's feet as a half-size token with the item's image. An item with a
-`TokenLight` rule element whose predicate holds (an everlight crystal always, a torch only while
-lit) puts that light on the ground token, so the room stays lit. The whole stack goes.
+placed **next to** the owner as a half-size token with the item's image: the nearest free square
+around the token (south, east, west, north, then the diagonals), skipping squares another token
+stands on or a wall blocks, so a downed character's weapons are visible beside the token instead
+of under it; under the token only when nothing around is free. A pile already lying under or
+beside the owner is reused. Drops run one at a time, so Workbench dropping three held items at
+once makes one pile, not three. An item with a `TokenLight` rule element whose predicate holds (an
+everlight crystal always, a torch only while lit) puts that light on the ground token, so the room
+stays lit. The whole stack goes.
 
 Because the hook watches the carry state and not a button, every path works: the menu, a macro,
 and Workbench's **drop held items when unconscious**, so a downed character's torch rolls onto
-the floor by itself. Picking up is the normal drag from the loot sheet; the pile hides itself when
-empty. Players need at least Limited on the pile, which PF2e sets on create.
+the floor by itself. Picking up is the normal drag from the loot sheet. The item remembers how it
+was carried (`flags.raccoon-tweaks.prevCarry`): something dropped from the hands goes back into
+the hands when picked up, if that many hands are free, otherwise into the pack. When the last item
+leaves, the pile's token and actor are deleted (since 0.15; before that the empty token stayed,
+hidden from players). Players need at least Limited on the pile, which PF2e sets on create.
 
 ## 10a. One in the hand, the rest in the pack
 

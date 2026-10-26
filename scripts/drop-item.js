@@ -26,7 +26,9 @@ export function registerDropItem() {
     relightFromGround(actor, survivor, info.name).catch((e) => warn("Relight on pick-up failed.", e));
   });
 
-  // A pile's light came from an item; when the last item leaves, the light goes too.
+  // When the last item leaves a pile, the pile goes: its tokens on every scene
+  // and the loot actor itself. (Before 0.15 only the light was cleared and the
+  // empty token stayed, hidden from players but in the GM's way.)
   Hooks.on("preDeleteItem", (item, options) => stampOrigin(options));
   Hooks.on("deleteItem", (item, options, userId) => {
     try {
@@ -34,14 +36,9 @@ export function registerDropItem() {
       const actor = item.actor;
       if (!actor?.getFlag("raccoon-tweaks", "groundPile")) return;
       if (actor.items.size > 0) return;
-      for (const t of actor.getActiveTokens(true, true)) {
-        if (t.light.bright || t.light.dim) {
-          t.update({ light: { bright: 0, dim: 0 }, "flags.raccoon-tweaks.-=lightFrom": null })
-            .catch((e) => warn("Could not clear the pile light.", e));
-        }
-      }
+      removeEmptyPile(actor).catch((e) => warn("Could not remove the empty pile.", e));
     } catch (error) {
-      warn("Pile light cleanup failed.", error);
+      warn("Pile cleanup failed.", error);
     }
   });
 
@@ -55,6 +52,7 @@ export function registerDropItem() {
       if (!item.isOfType?.("physical") || !item.actor) return;
       options.raccoonDropLight = lightFor(item);
       options.raccoonPrevCarry = item._source?.system?.equipped?.carryType ?? "worn";
+      options.raccoonPrevHands = item._source?.system?.equipped?.handsHeld ?? 0;
     } catch (error) {
       warn("Drop pre-hook failed.", error);
     }
@@ -69,22 +67,37 @@ export function registerDropItem() {
       const actor = item.actor;
       if (!actor || !["character", "npc"].includes(actor.type)) return;
       if (actor.getFlag("raccoon-tweaks", "groundPile")) return;  // never re-drop out of a pile
-      dropItem(actor, item, options.raccoonDropLight ?? null, options.raccoonPrevCarry ?? "worn").catch((error) => {
-        warn("Drop on ground failed.", error);
-        ui.notifications.error(game.i18n.format("raccoon-tweaks.drop.failed", { error: error.message }));
-      });
+      // One drop at a time. Workbench drops every held item of a downed
+      // character in the same tick; run in parallel, each drop looked for a
+      // pile before the others had created theirs, and three items made three
+      // piles on one square.
+      dropQueue = dropQueue
+        .then(() => dropItem(actor, item, options.raccoonDropLight ?? null, options.raccoonPrevCarry ?? "worn", options.raccoonPrevHands ?? 0))
+        .catch((error) => {
+          warn("Drop on ground failed.", error);
+          ui.notifications.error(game.i18n.format("raccoon-tweaks.drop.failed", { error: error.message }));
+        });
     } catch (error) {
       warn("Drop hook failed.", error);
     }
   });
 }
 
-async function dropItem(actor, item, light, prevCarry) {
+let dropQueue = Promise.resolve();
+
+async function dropItem(actor, item, light, prevCarry, prevHands) {
   const token = actor.getActiveTokens(true, true)[0];
   if (!token || !canvas.scene) {
     ui.notifications.warn(game.i18n.localize("raccoon-tweaks.drop.noToken"));
     return;
   }
+  if (!actor.items.get(item.id)) return;                       // already gone (a merged twin, a second tab)
+
+  // How it was carried travels with it, so picking it up puts it back in the
+  // same hands (stack-split.js, restoreCarry). Written before the transfer:
+  // PF2e copies the item's flags onto the ground copy.
+  const prev = { carryType: prevCarry, handsHeld: prevCarry === "held" ? Math.max(1, prevHands) : 0 };
+  await item.update({ "flags.raccoon-tweaks.prevCarry": prev }, { raccoonStack: true });
 
   // The Torch module (game.Torch) lights tokens from its own table and writes
   // the light into the token; PF2e's rule toggle knows nothing about it. If the
@@ -106,8 +119,9 @@ async function dropItem(actor, item, light, prevCarry) {
       copy.system.quantity = 1;
       copy.system.equipped = { carryType: "worn", handsHeld: 0, invested: null };
       foundry.utils.setProperty(copy, "flags.raccoon-tweaks.litOnGround", true);
+      foundry.utils.setProperty(copy, "flags.raccoon-tweaks.prevCarry", prev);
       await pile.actor.createEmbeddedDocuments("Item", [copy], { raccoonStack: true });
-      await item.update({ "system.equipped.carryType": prevCarry, "system.equipped.handsHeld": prevCarry === "held" ? 1 : 0 }, { raccoonStack: true });
+      await item.update({ "system.equipped.carryType": prevCarry, "system.equipped.handsHeld": prevCarry === "held" ? 1 : 0, "flags.raccoon-tweaks.-=prevCarry": null }, { raccoonStack: true });
     } else {
       // Nothing was consumed: the lit torch is one unit of the dropped stack.
       // PF2e marked the whole stack dropped; whatever stays in the pack goes
@@ -116,7 +130,7 @@ async function dropItem(actor, item, light, prevCarry) {
       const onGround = pile.actor.items.find((i) => i.name === item.name && i.isOfType?.("physical"));
       if (onGround) await onGround.setFlag("raccoon-tweaks", "litOnGround", true);
       const rest = actor.items.get(item.id);
-      if (rest) await rest.update({ "system.equipped.carryType": prevCarry, "system.equipped.handsHeld": prevCarry === "held" ? 1 : 0 }, { raccoonStack: true });
+      if (rest) await rest.update({ "system.equipped.carryType": prevCarry, "system.equipped.handsHeld": prevCarry === "held" ? 1 : 0, "flags.raccoon-tweaks.-=prevCarry": null }, { raccoonStack: true });
     }
   } else {
     // PF2e's own transfer keeps identity and stacks; the whole stack goes, as "I drop it" means.
@@ -128,8 +142,18 @@ async function dropItem(actor, item, light, prevCarry) {
     await pile.token.update({ light, "flags.raccoon-tweaks.lightFrom": item.slug ?? item.name });
   }
 
-  log(`Dropped ${item.name} at ${token.x},${token.y}.`);
+  log(`Dropped ${item.name} at ${pile.token.x},${pile.token.y}${pile.token.x === token.x && pile.token.y === token.y ? " (under the token)" : ""}.`);
   ui.notifications.info(game.i18n.format("raccoon-tweaks.drop.done", { item: item.name }));
+}
+
+/** Tokens of an emptied pile on every scene, then the actor. */
+async function removeEmptyPile(actor) {
+  for (const scene of game.scenes) {
+    const ids = scene.tokens.filter((t) => t.actorId === actor.id).map((t) => t.id);
+    if (ids.length) await scene.deleteEmbeddedDocuments("Token", ids);
+  }
+  await actor.delete();
+  log(`Removed the empty pile ${actor.name}.`);
 }
 
 /**
@@ -233,13 +257,62 @@ async function torchModuleState(item, token) {
   }
 }
 
-/** The loot token in this square, or a new one. */
+/**
+ * Where a drop lands. A pile that already lies under or next to the owner is
+ * reused. Otherwise the nearest free square around the owner, so a downed
+ * character's weapons are visible beside the token instead of under it;
+ * under the token only when every neighbour is taken or walled off.
+ */
+function dropSquare(token) {
+  const scene = canvas.scene, g = scene.grid.size;
+  const isPile = (t) => t.actor?.type === "loot" && t.getFlag("raccoon-tweaks", "groundPile");
+  const pileAt = (x, y) => scene.tokens.find((t) => isPile(t) && t.x === x && t.y === y);
+  const w = Math.max(1, Math.round(token.width ?? 1)), h = Math.max(1, Math.round(token.height ?? 1));
+  const centre = { x: token.x + (w * g) / 2, y: token.y + (h * g) / 2 };
+  // Squares around the token's footprint, nearest first; for a 1x1 token: S, E, W, N, then the diagonals.
+  const ring = [];
+  for (let dy = -1; dy <= h; dy++) for (let dx = -1; dx <= w; dx++) {
+    if (dx >= 0 && dx < w && dy >= 0 && dy < h) continue;
+    ring.push({ x: token.x + dx * g, y: token.y + dy * g, d: Math.hypot(dx - (w - 1) / 2, dy - (h - 1) / 2), tie: dy > 0 ? 0 : dx > 0 ? 1 : dx < 0 ? 2 : 3 });
+  }
+  ring.sort((a, b) => a.d - b.d || a.tie - b.tie);
+
+  const under = pileAt(token.x, token.y);
+  if (under) return { x: under.x, y: under.y, pile: under };
+  for (const s of ring) { const p = pileAt(s.x, s.y); if (p && reachable(centre, s, g)) return { x: s.x, y: s.y, pile: p }; }
+  for (const s of ring) {
+    if (s.x < 0 || s.y < 0 || s.x + g > scene.dimensions.width || s.y + g > scene.dimensions.height) continue;
+    if (occupied(scene, s.x, s.y, g)) continue;
+    if (!reachable(centre, s, g)) continue;
+    return { x: s.x, y: s.y, pile: null };
+  }
+  return { x: token.x, y: token.y, pile: null };
+}
+
+/** Any non-pile token whose footprint covers this square. */
+function occupied(scene, x, y, g) {
+  return scene.tokens.some((t) => {
+    if (t.actor?.type === "loot" && t.getFlag("raccoon-tweaks", "groundPile")) return false;
+    const tw = Math.max(1, Math.round(t.width ?? 1)) * g, th = Math.max(1, Math.round(t.height ?? 1)) * g;
+    return x < t.x + tw && x + g > t.x && y < t.y + th && y + g > t.y;
+  });
+}
+
+/** No movement-blocking wall between the owner's centre and the square's centre. */
+function reachable(from, square, g) {
+  try {
+    const to = { x: square.x + g / 2, y: square.y + g / 2 };
+    const backend = CONFIG.Canvas.polygonBackends?.move;
+    if (!backend?.testCollision) return true;
+    return !backend.testCollision(from, to, { type: "move", mode: "any" });
+  } catch { return true; }
+}
+
+/** The loot token where this owner's drop lands, or a new one. */
 async function groundPileAt(token, { img, light } = {}) {
   const name = setting(SETTINGS.DROP_PILE_NAME)?.trim() || "Na zemi";
-  const existing = canvas.scene.tokens.find((t) =>
-    t.actor?.type === "loot" && t.getFlag("raccoon-tweaks", "groundPile")
-    && t.x === token.x && t.y === token.y);
-  if (existing) return { actor: existing.actor, token: existing, created: false };
+  const spot = dropSquare(token);
+  if (spot.pile) return { actor: spot.pile.actor, token: spot.pile, created: false };
 
   const folder = game.folders.find((f) => f.type === "Actor" && f.name === "Treasure") ?? null;
   const actor = await Actor.implementation.create({
@@ -255,7 +328,7 @@ async function groundPileAt(token, { img, light } = {}) {
   }
 
   const data = await actor.getTokenDocument({
-    x: token.x, y: token.y,
+    x: spot.x, y: spot.y,
     width: 0.5, height: 0.5,
     hidden: false,
     texture: { src: img ?? actor.img },

@@ -75,7 +75,7 @@
       },
       "dropPileName": {
         "name": "Dropped items: pile name",
-        "hint": "Name of the loot actor created when an item is set to Dropped in the inventory carry menu. One per square; it hides itself when empty."
+        "hint": "Name of the loot actor created when an item is set to Dropped in the inventory carry menu. Lands on the nearest free square beside the owner, one pile per square; it is removed when empty."
       },
       "perfMeter": {
         "name": "Performance meter",

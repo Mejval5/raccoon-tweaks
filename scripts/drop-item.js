@@ -18,6 +18,38 @@ import { setting } from "./settings.js";
 export function registerDropItem() {
   Hooks.once("setup", installTransferWrapper);
 
+  // Dragging an item from a sheet onto the map drops it on that square. Only
+  // on empty ground: a drop onto a token is PF2e's own "give it to them".
+  // Players may drop within one square of their token, the GM anywhere.
+  Hooks.on("dropCanvasData", (canvasRef, data) => {
+    try {
+      if (data?.type !== "Item" || !data.uuid || !Number.isFinite(data.x) || !Number.isFinite(data.y)) return true;
+      const item = fromUuidSync(data.uuid);
+      if (!item?.isOfType?.("physical") || !item.actor || !["character", "npc"].includes(item.actor.type)) return true;
+      if (!item.actor.isOwner || item.actor.getFlag("raccoon-tweaks", "groundPile")) return true;
+      if (item.system?.equipped?.carryType === "dropped") return true;
+      const g = canvas.grid.size;
+      const underToken = canvas.scene.tokens.some((t) => !t.getFlag("raccoon-tweaks", "groundPile")
+        && data.x >= t.x && data.x < t.x + Math.max(1, t.width) * g && data.y >= t.y && data.y < t.y + Math.max(1, t.height) * g);
+      if (underToken) return true;
+      const owner = item.actor.getActiveTokens(true, true)[0];
+      if (!owner) return true;
+      const square = canvas.grid.getTopLeftPoint({ x: data.x, y: data.y });
+      if (!game.user.isGM) {
+        const w = Math.max(1, Math.round(owner.width ?? 1)), h = Math.max(1, Math.round(owner.height ?? 1));
+        const dx = square.x < owner.x ? owner.x - square.x : Math.max(0, square.x - (owner.x + (w - 1) * g));
+        const dy = square.y < owner.y ? owner.y - square.y : Math.max(0, square.y - (owner.y + (h - 1) * g));
+        if (dx > g || dy > g) { ui.notifications.warn(game.i18n.localize("raccoon-tweaks.drop.tooFar")); return false; }
+      }
+      item.update({ "system.equipped.carryType": "dropped", "system.equipped.handsHeld": 0 }, { raccoonSquare: { x: square.x, y: square.y } })
+        .catch((e) => warn("Drop onto the map failed.", e));
+      return false;
+    } catch (error) {
+      warn("Canvas drop hook failed.", error);
+      return true;
+    }
+  });
+
   // Fired by stack-split.js once an arriving item has settled (merged or not).
   // A torch that was burning on the ground lights up again in the new owner's
   // hands, through the Torch module, without costing a torch.
@@ -72,7 +104,7 @@ export function registerDropItem() {
       // pile before the others had created theirs, and three items made three
       // piles on one square.
       dropQueue = dropQueue
-        .then(() => dropItem(actor, item, options.raccoonDropLight ?? null, options.raccoonPrevCarry ?? "worn", options.raccoonPrevHands ?? 0))
+        .then(() => dropItem(actor, item, options.raccoonDropLight ?? null, options.raccoonPrevCarry ?? "worn", options.raccoonPrevHands ?? 0, options.raccoonSquare ?? null))
         .catch((error) => {
           warn("Drop on ground failed.", error);
           ui.notifications.error(game.i18n.format("raccoon-tweaks.drop.failed", { error: error.message }));
@@ -85,7 +117,7 @@ export function registerDropItem() {
 
 let dropQueue = Promise.resolve();
 
-async function dropItem(actor, item, light, prevCarry, prevHands) {
+async function dropItem(actor, item, light, prevCarry, prevHands, square = null) {
   const token = actor.getActiveTokens(true, true)[0];
   if (!token || !canvas.scene) {
     ui.notifications.warn(game.i18n.localize("raccoon-tweaks.drop.noToken"));
@@ -107,7 +139,7 @@ async function dropItem(actor, item, light, prevCarry, prevHands) {
   const torch = await torchModuleState(item, token);
   if (torch) light = torch.light;
 
-  const pile = await groundPileAt(token, { img: item.img, light });
+  const pile = await groundPileAt(token, { img: item.img, light, square });
 
   if (torch) {
     await game.Torch.extinguish(torch.sceneId, torch.tokenId);
@@ -309,9 +341,11 @@ function reachable(from, square, g) {
 }
 
 /** The loot token where this owner's drop lands, or a new one. */
-async function groundPileAt(token, { img, light } = {}) {
+async function groundPileAt(token, { img, light, square } = {}) {
   const name = setting(SETTINGS.DROP_PILE_NAME)?.trim() || "Na zemi";
-  const spot = dropSquare(token);
+  const spot = square
+    ? { x: square.x, y: square.y, pile: canvas.scene.tokens.find((t) => t.actor?.type === "loot" && t.getFlag("raccoon-tweaks", "groundPile") && t.x === square.x && t.y === square.y) ?? null }
+    : dropSquare(token);
   if (spot.pile) return { actor: spot.pile.actor, token: spot.pile, created: false };
 
   const folder = game.folders.find((f) => f.type === "Actor" && f.name === "Treasure") ?? null;

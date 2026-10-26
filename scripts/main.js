@@ -10,10 +10,10 @@ import { registerVisionerAutoAccept } from "./visioner-autoaccept.js";
 import { registerDropItem } from "./drop-item.js";
 import { registerStackSplit } from "./stack-split.js";
 import { installPerfMeter } from "./perf-meter.js";
+import { installBootTimeline } from "./boot-timeline.js";
 
-Hooks.once("init",  () => console.log("PHASE init",  Math.round(performance.now())));
-Hooks.once("setup", () => console.log("PHASE setup", Math.round(performance.now())));
-Hooks.once("ready", () => console.log("PHASE ready", Math.round(performance.now())));
+// First thing, before any hook: the timeline measures everything after this line.
+installBootTimeline();
 
 Hooks.once("init", () => {
   registerSettings();

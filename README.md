@@ -298,6 +298,16 @@ Players on weak machines turn it off themselves; nothing to build here.
 
 ---
 
+## 12. Boot timeline
+
+Every load prints one green `[boot]` line per phase (module-eval, init, i18nInit, setup, ready,
+canvasConfig, canvasInit, canvasDraw, canvasReady, pf2e.systemReady) with milliseconds since the
+page opened and the delta from the previous phase, then a collapsed summary at canvasReady: page
+interactive, last script received, every phase, summed script transfer time, JS heap, document
+counts, module count, and the eight slowest scripts. The same marks appear as `raccoon:` measures
+in the DevTools Performance panel. Read with DevTools -> console settings -> **Show timestamps**
+so every other module's lines get wall-clock times too. Always on; nothing to configure.
+
 ## Install
 
 Self-hosted, container launched with `--noupdate`, so drop it in by hand:

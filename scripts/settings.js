@@ -58,7 +58,7 @@ export function registerSettings() {
     default: "Na zemi",
   });
 
-  // Per browser, GM only in practice (the panel is GM-only).
+  // Per browser; any user. Players on weak machines turn it on and copy the report for the GM.
   game.settings.register(MODULE_ID, SETTINGS.PERF_METER, {
     name: t("perfMeter.name"),
     hint: t("perfMeter.hint"),

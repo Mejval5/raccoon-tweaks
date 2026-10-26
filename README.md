@@ -279,11 +279,14 @@ Hooks act only in the browser tab where the change was made (pre-hooks stamp a p
 the same user open in two tabs does not run a drop twice. When a pile empties its light is
 cleared, since a hidden token still lights the map for the GM.
 
-## 11. Performance meter (GM)
+## 11. Performance meter
 
-A small panel (toggle in the Token controls, gauge icon, or the **Performance meter** setting):
-FPS, frame p50/p95/max, long tasks (>50 ms) per minute, JS heap, long tasks grouped by the hook
-that was running when they started, and cumulative time per hook since start. Hook attribution
+A small panel for any user (toggle in the Token controls, gauge icon, or the **Performance meter**
+client setting): FPS, frame p50/p95/max, long tasks (>50 ms) per minute, JS heap, long tasks
+grouped by the hook that was running when they started, cumulative time per hook since start, and
+the machine: GPU string (SwiftShader or a Basic Render Driver means no hardware acceleration),
+cores, RAM, Foundry performance mode and max FPS, scene light count, network estimate, browser
+storage. Players on weak machines turn it on and ⧉ copy the report for the GM; it names the user. Hook attribution
 wraps `Hooks.callAll` / `Hooks.call` at init, so every module's reaction to the game is counted
 under the hook that triggered it. ⧉ copies a plain-text report; ⟲ resets. In a background tab
 Chrome stops animation frames, so the FPS row says so instead of reading 0.

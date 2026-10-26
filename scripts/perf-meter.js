@@ -2,8 +2,9 @@ import { MODULE_ID, SETTINGS, log, warn } from "./constants.js";
 import { setting } from "./settings.js";
 
 /**
- * A GM-only performance meter: FPS, frame-time p95, long tasks (>50 ms) per
- * minute, and which hook was running when each long task began. Hooks are
+ * A per-client performance meter for anyone at the table: FPS, frame-time p95, long tasks
+ * (>50 ms) per minute, which hook was running when each long task began, and what the machine
+ * is (GPU, cores, RAM, Foundry performance mode) so a player's copied report explains itself. Hooks are
  * attributed by wrapping Hooks.callAll / Hooks.call at init, which is the one
  * place every module's reaction to the game passes through. Toggle with the
  * Token scene control or the setting; copy the report from the panel.
@@ -11,7 +12,6 @@ import { setting } from "./settings.js";
 export function installPerfMeter() {
   wrapHooks();
   Hooks.on("getSceneControlButtons", (controls) => {
-    if (!game.user?.isGM) return;
     const tokens = controls.tokens ?? controls.find?.((c) => c.name === "token");
     if (!tokens) return;
     const tool = {
@@ -27,7 +27,7 @@ export function installPerfMeter() {
     else tokens.tools[tool.name] = tool;
   });
   Hooks.once("ready", () => {
-    if (game.user.isGM && setting(SETTINGS.PERF_METER)) start();
+    if (setting(SETTINGS.PERF_METER)) start();
   });
 }
 
@@ -71,10 +71,25 @@ let rafId = 0, observer = null, panel = null, timer = 0;
 const frames = [];            // last ~600 frame durations (ms)
 const longTasks = [];         // {t, dur, hook}
 let lastFrame = 0;
+let device = null;           // machine facts, read once per start
+
+/* What the machine is. The GPU string is the one that matters: SwiftShader or a Basic Render Driver
+   means no hardware acceleration, and no setting on our side fixes that. */
+async function readDevice() {
+  const d = { gpu: "?", cores: navigator.hardwareConcurrency ?? "?", ram: navigator.deviceMemory ? `${navigator.deviceMemory} GB` : "?",
+    perfMode: "?", maxFps: "?", net: "", lights: canvas.scene?.lights.size ?? "?", screen: `${screen.width}x${screen.height}@${devicePixelRatio}`, storage: "" };
+  try { const gl = canvas.app.renderer.gl, x = gl.getExtension("WEBGL_debug_renderer_info"); d.gpu = x ? gl.getParameter(x.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER); } catch (error) { warn("GPU string not readable.", error); }
+  try { d.perfMode = String(game.settings.get("core", "performanceMode")); } catch { /* older core */ }
+  try { d.maxFps = String(game.settings.get("core", "maxFPS")); } catch { /* older core */ }
+  const c = navigator.connection; if (c) d.net = `${c.effectiveType ?? ""} ${c.downlink ?? "?"} Mb/s rtt ${c.rtt ?? "?"} ms`;
+  try { const e = await navigator.storage?.estimate?.(); if (e) d.storage = `${Math.round(e.usage / 1048576)} / ${Math.round(e.quota / 1048576)} MB`; } catch { /* no estimate */ }
+  return d;
+}
 
 function start() {
   if (panel) return;
   frames.length = 0; longTasks.length = 0; hookTotals.clear();
+  device = null; readDevice().then((d) => { device = d; render(); });
   lastFrame = performance.now();
   const tick = (t) => {
     const dt = t - lastFrame; lastFrame = t;
@@ -145,7 +160,16 @@ function render() {
     ...s.topLong.map(([k, v]) => row(esc(k), `${v.n}× ${ms(v.ms)}`)),
     `<div class="rt-perf-h">hook time since start</div>`,
     ...s.topHooks.map(([k, v]) => row(esc(k), `${ms(v.ms)} / ${v.calls} (max ${ms(v.max)})`)),
+    `<div class="rt-perf-h">machine</div>`,
+    ...deviceRows().map(([k, v]) => row(k, esc(v))),
   ].join("");
+}
+
+function deviceRows() {
+  if (!device) return [["reading", "…"]];
+  const d = device;
+  return [["gpu", d.gpu], ["cores / ram", `${d.cores} / ${d.ram}`], ["perf mode / max fps", `${d.perfMode} / ${d.maxFps}`], ["scene lights", d.lights],
+    ["screen", d.screen], d.net ? ["network", d.net] : null, d.storage ? ["browser storage", d.storage] : null].filter(Boolean);
 }
 
 function esc(s) { return String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }
@@ -172,6 +196,8 @@ async function copyReport() {
   const lines = [
     `raccoon perf report ${new Date().toISOString()} scene=${canvas.scene?.name} tokens=${canvas.scene?.tokens.size} modules=${game.modules.filter((m) => m.active).length}`,
     `fps=${s.fps.toFixed(1)} p50=${s.p50.toFixed(1)} p95=${s.p95.toFixed(1)} max=${s.max.toFixed(0)} longTasks/min=${s.longPerMin} (${s.longMsPerMin.toFixed(0)} ms) heapMB=${s.heap?.toFixed(0)}`,
+    `user=${game.user.name} ${game.user.isGM ? "(GM)" : ""}`,
+    ...deviceRows().map(([k, v]) => `  ${k}: ${v}`),
     "long tasks by hook (last minute):",
     ...s.topLong.map(([k, v]) => `  ${k}: ${v.n}x ${v.ms.toFixed(0)} ms`),
     "hook time since start:",

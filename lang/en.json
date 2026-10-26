@@ -78,8 +78,8 @@
         "hint": "Name of the loot actor created when an item is set to Dropped in the inventory carry menu. One per square; it hides itself when empty."
       },
       "perfMeter": {
-        "name": "Performance meter (GM)",
-        "hint": "Show a small panel with FPS, frame times, long tasks and which hook was running when they happened. Also a toggle in the Token controls."
+        "name": "Performance meter",
+        "hint": "Show a small panel with FPS, frame times, long tasks, which hook was running when they happened, and what your machine is. Also a toggle in the Token controls. Use ⧉ to copy a report for the GM."
       }
     },
     "ai": {

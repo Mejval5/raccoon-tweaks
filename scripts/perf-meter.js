@@ -5,12 +5,13 @@ import { setting } from "./settings.js";
  * A per-client performance meter for anyone at the table: FPS, frame-time p95, long tasks
  * (>50 ms) per minute, which hook was running when each long task began, and what the machine
  * is (GPU, cores, RAM, Foundry performance mode) so a player's copied report explains itself. Hooks are
- * attributed by wrapping Hooks.callAll / Hooks.call at init, which is the one
+ * attributed by wrapping Hooks.callAll / Hooks.call when the meter is first switched on, which is the one
  * place every module's reaction to the game passes through. Toggle with the
  * Token scene control or the setting; copy the report from the panel.
  */
 export function installPerfMeter() {
-  wrapHooks();
+  // Hooks are wrapped only once the meter is switched on: a user who never opens it keeps clean stack
+  // traces, and libWrapper stops naming raccoon-tweaks next to whichever module actually threw.
   Hooks.on("getSceneControlButtons", (controls) => {
     const tokens = controls.tokens ?? controls.find?.((c) => c.name === "token");
     if (!tokens) return;
@@ -88,6 +89,7 @@ async function readDevice() {
 
 function start() {
   if (panel) return;
+  wrapHooks();
   frames.length = 0; longTasks.length = 0; hookTotals.clear();
   device = null; readDevice().then((d) => { device = d; render(); });
   lastFrame = performance.now();

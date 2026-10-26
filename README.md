@@ -287,7 +287,8 @@ grouped by the hook that was running when they started, cumulative time per hook
 the machine: GPU string (SwiftShader or a Basic Render Driver means no hardware acceleration),
 cores, RAM, Foundry performance mode and max FPS, scene light count, network estimate, browser
 storage. Players on weak machines turn it on and ⧉ copy the report for the GM; it names the user. Hook attribution
-wraps `Hooks.callAll` / `Hooks.call` at init, so every module's reaction to the game is counted
+wraps `Hooks.callAll` / `Hooks.call` the first time the meter is switched on (not at init, so
+users who never open it keep clean stack traces), so every module's reaction to the game is counted
 under the hook that triggered it. ⧉ copies a plain-text report; ⟲ resets. In a background tab
 Chrome stops animation frames, so the FPS row says so instead of reading 0.
 

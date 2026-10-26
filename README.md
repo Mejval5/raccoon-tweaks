@@ -316,6 +316,43 @@ counts, module count, and the eight slowest scripts. The same marks appear as `r
 in the DevTools Performance panel. Read with DevTools -> console settings -> **Show timestamps**
 so every other module's lines get wall-clock times too. Always on; nothing to configure.
 
+---
+
+## 13. Chat automation: Treat Wounds immunity, damage to the target
+
+Two cards the table clicked or dragged every time, handled as the message arrives. Both run in
+the **active GM's tab only** (`game.user === game.users.activeGM`); players' tabs never apply
+anything, and a second tab of the same GM user stands down after a short claim on the message,
+so nothing lands twice.
+
+**Treat Wounds** -> after the check, `Effect: Treat Wounds Immunity` (the compendium effect, one
+hour, unchanged) goes onto the patient. The patient is the roll's target when the check recorded
+one, otherwise the single creature the roller had targeted: the system's Treat Wounds macro
+(Workbench's Basic Action Macros call the same one) rolls with a bare DC, and a skill check only
+records its target when the DC names a slug or statistic, so for the macro the user's own
+targeting is what there is. Nobody targeted, two targeted, or the patient already immune ->
+nothing happens, with a console line. Target the patient before rolling.
+
+**Damage** -> a damage roll with one target in its context (a Strike, an attack spell, an
+elemental blast) is applied to that target the way the x1 button does it: PF2e's own
+`applyDamage` on the target's actor, with the roll's options, the origin's options, the ally or
+enemy relation and the attacker's ephemeral effects built exactly as `applyDamageFromMessage`
+builds them, so weaknesses, resistances, immunities, hardness, persistent damage and the "X
+takes N damage" card are PF2e's. A healing-only roll goes in as the heal button would. The
+multiplier is always 1; a crit's doubling is already in the roll.
+
+Deliberately left for a click: a roll with no single target (area spells, templates, no target,
+and non-attack spells, which the system never gives a target in 8.5, Heal included); a roll
+whose spell has a save (the target saves first); a heal-or-harm roll (vitality on an unknown
+target: the card decides which button); and a target with a shield raised and usable, so the
+player can still Shield Block. If PF2e throws during application the card is left as it was and
+a warning says so.
+
+Two world settings, both on by default: **Treat Wounds applies its immunity** and **Damage rolls
+land on their target**. The applied card carries `flags.raccoon-tweaks.applied` or
+`.treatWounds`; PF2e itself marks nothing on the roll card (its `appliedDamage` flag sits on the
+new damage-taken message).
+
 ## Install
 
 Self-hosted, container launched with `--noupdate`, so drop it in by hand:
@@ -349,6 +386,7 @@ scripts/
   visioner-autoaccept.js  clicks Apply All on Visioner dialogs
   drop-item.js        Dropped carry state -> loot pile at the owner's feet, with its light
   stack-split.js      held splits one off a stack, worn/stowed merges it back
+  auto-apply.js       Treat Wounds immunity onto the patient, damage rolls onto their target (two world settings)
   perf-meter.js       GM performance panel with hook attribution
 styles/raccoon-tweaks.css
 lang/en.json

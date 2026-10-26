@@ -68,6 +68,25 @@ export function registerSettings() {
     default: false,
   });
 
+  // Both act in the active GM's tab only; players' tabs never apply anything.
+  game.settings.register(MODULE_ID, SETTINGS.AUTO_TREAT_WOUNDS, {
+    name: t("autoTreatWounds.name"),
+    hint: t("autoTreatWounds.hint"),
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
+  game.settings.register(MODULE_ID, SETTINGS.AUTO_APPLY_DAMAGE, {
+    name: t("autoApplyDamage.name"),
+    hint: t("autoApplyDamage.hint"),
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
   // Written by the pauseGame hook, not shown in the settings sheet.
   game.settings.register(MODULE_ID, SETTINGS.LAST_PAUSED, {
     scope: "world",

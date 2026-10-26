@@ -80,6 +80,14 @@
       "perfMeter": {
         "name": "Performance meter",
         "hint": "Show a small panel with FPS, frame times, long tasks, which hook was running when they happened, and what your machine is. Also a toggle in the Token controls. Use ⧉ to copy a report for the GM."
+      },
+      "autoTreatWounds": {
+        "name": "Treat Wounds applies its immunity",
+        "hint": "After a Treat Wounds check, put Effect: Treat Wounds Immunity on the patient: the roll's target, or the single creature the roller had targeted. Skipped when nobody or more than one is targeted, or the patient is already immune. Runs in the GM's tab only."
+      },
+      "autoApplyDamage": {
+        "name": "Damage rolls land on their target",
+        "hint": "A Strike, attack spell or blast damage roll made against one target is applied to it as the x1 button would (healing-only rolls as the heal button). Skipped when the roll has no single target (area, no target, non-attack spells), when the target saves first, when the target has a shield raised (Shield Block stays possible), and for heal-or-harm rolls. Runs in the GM's tab only."
       }
     },
     "ai": {
@@ -120,10 +128,15 @@
     "drop": {
       "noToken": "This character has no token on the current scene, so the dropped item stays in the inventory.",
       "done": "{item} is on the ground.",
+      "tooFar": "Too far: drop it within one square of your token.",
       "failed": "Drop failed: {error}"
     },
     "perf": {
       "toggle": "Performance meter"
+    },
+    "autoApply": {
+      "damageFailed": "Damage was not applied automatically, click the card: {error}",
+      "immunityFailed": "Treat Wounds Immunity was not applied, drag it from the card: {error}"
     }
   }
 }

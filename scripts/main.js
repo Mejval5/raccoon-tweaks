@@ -12,6 +12,8 @@ import { registerStackSplit } from "./stack-split.js";
 import { installPerfMeter } from "./perf-meter.js";
 import { installBootTimeline } from "./boot-timeline.js";
 import { registerAutoApply } from "./auto-apply.js";
+import { registerTransfer } from "./transfer.js";
+import { applyToolbeltDefaults } from "./toolbelt-defaults.js";
 
 // First thing, before any hook: the timeline measures everything after this line.
 installBootTimeline();
@@ -25,6 +27,8 @@ Hooks.once("init", () => {
   registerDropItem();
   registerStackSplit();
   registerAutoApply();
+  registerTransfer();
+  applyToolbeltDefaults();
   installPerfMeter();
   installTokenizerPatch();
   registerTokenizerTweaks();

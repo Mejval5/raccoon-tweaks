@@ -58,6 +58,16 @@ export function registerSettings() {
     default: "Na zemi",
   });
 
+  // Plain drag hands the whole stack over, Shift keeps PF2e's dialogs (transfer.js).
+  game.settings.register(MODULE_ID, SETTINGS.QUICK_TRANSFER, {
+    name: t("quickTransfer.name"),
+    hint: t("quickTransfer.hint"),
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
   // Per browser; any user. Players on weak machines turn it on and copy the report for the GM.
   game.settings.register(MODULE_ID, SETTINGS.PERF_METER, {
     name: t("perfMeter.name"),

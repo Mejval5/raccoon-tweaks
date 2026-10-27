@@ -34,6 +34,7 @@ export const SETTINGS = {
   IMPORT_FOLDERS: "import-folders",
   VISIONER_AUTOACCEPT: "visioner-autoaccept",
   DROP_PILE_NAME: "drop-pile-name",
+  QUICK_TRANSFER: "quick-transfer",
   PERF_METER: "perf-meter",
   AUTO_TREAT_WOUNDS: "auto-treat-wounds-immunity",
   AUTO_APPLY_DAMAGE: "auto-apply-damage",

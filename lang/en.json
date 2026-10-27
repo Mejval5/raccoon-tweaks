@@ -88,6 +88,10 @@
       "autoApplyDamage": {
         "name": "Damage rolls land on their target",
         "hint": "A Strike, attack spell or blast damage roll made against one target is applied to it as the x1 button would (healing-only rolls as the heal button). Skipped when the roll has no single target (area, no target, non-attack spells), when the target saves first, when the target has a shield raised (Shield Block stays possible), and for heal-or-harm rolls. Runs in the GM's tab only."
+      },
+      "quickTransfer": {
+        "name": "Hand over items without the dialogs",
+        "hint": "A plain drag of an item onto another character or NPC moves the whole stack at once: directly between your own actors, through the GM's tab for someone else's character (a short chat line says who gave what). Hold Shift to get the system's quantity popup or trade dialog instead. Loot and merchants are not affected."
       }
     },
     "ai": {
@@ -137,6 +141,10 @@
     "autoApply": {
       "damageFailed": "Damage was not applied automatically, click the card: {error}",
       "immunityFailed": "Treat Wounds Immunity was not applied, drag it from the card: {error}"
+    },
+    "transfer": {
+      "requested": "{item} handed to {target} (done by the GM's table).",
+      "message": "{source} hands {quantity}x {item} to {target}."
     }
   }
 }

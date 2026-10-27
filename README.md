@@ -353,6 +353,21 @@ land on their target**. The applied card carries `flags.raccoon-tweaks.applied` 
 `.treatWounds`; PF2e itself marks nothing on the roll card (its `appliedDamage` flag sits on the
 new damage-taken message).
 
+## 14. Handing an item over without the dialogs
+
+Drop an item from one character's sheet onto another character or NPC and PF2e asks: a quantity
+popup for your own actors, and for another player's character a **trade dialog that both players
+have to accept** (the "second confirmation" from the 2026-10-26 call). With **Hand over items
+without the dialogs** on (world setting, default on), a plain drag moves the whole stack at once.
+Between two actors you own it is a direct transfer. Onto an actor you do not own, the active GM's
+tab does the transfer on a socket request from this module, after checking that you own the source
+and the two are allies, and posts "X hands 3x Bolts to Y" in chat; with no GM online the system's
+trade runs instead. **Hold Shift** while dropping to get PF2e's own popup or trade dialog. Loot
+actors and merchants are never touched, so buying and looting stay as they are.
+
+The wrap is on the actor sheet's `moveItemBetweenActors`; a drop onto a token on the map goes
+through the same method.
+
 ## Install
 
 Self-hosted, container launched with `--noupdate`, so drop it in by hand:
@@ -386,6 +401,7 @@ scripts/
   visioner-autoaccept.js  clicks Apply All on Visioner dialogs
   drop-item.js        Dropped carry state -> loot pile at the owner's feet, with its light
   stack-split.js      held splits one off a stack, worn/stowed merges it back
+  transfer.js         plain drag hands a stack to another actor, Shift keeps PF2e's dialogs
   auto-apply.js       Treat Wounds immunity onto the patient, damage rolls onto their target (two world settings)
   perf-meter.js       GM performance panel with hook attribution
 styles/raccoon-tweaks.css

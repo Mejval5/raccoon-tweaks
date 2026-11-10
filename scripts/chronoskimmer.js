@@ -36,6 +36,13 @@ export function registerChronoskimmer() {
           if (setting(SETTINGS.CHRONOSKIMMER_PROMPT) && actor?.isOwner) {
             feat = actor.itemTypes?.feat?.find((f) => f.slug === SLUG) ?? null;
           }
+          // "Roll all" in the GM's tab must not answer for a player who is at the
+          // table: Arnold's initiative was posted before Makak had chosen
+          // (session 9). The player rolls it; the GM only when nobody is there.
+          if (feat && game.user.isGM && playerOnline(actor)) {
+            ui.notifications.info(game.i18n.format("raccoon-tweaks.chrono.playerRolls", { name: actor.name }));
+            return null;
+          }
           if (feat) {
             const choice = await ask(actor);
             if (!choice) return null;                                  // closed: no roll
@@ -48,7 +55,11 @@ export function registerChronoskimmer() {
           feat = null;
         }
         try {
-          return await original.call(this, args);
+          // The toggle re-prepares the actor and builds a new initiative
+          // statistic; rolling the one from before the toggle is how the first
+          // try in session 9 showed a bare 10 without the +8.
+          const statistic = feat ? (this.actor?.initiative ?? this) : this;
+          return await original.call(statistic, args);
         } finally {
           // Leave the checkbox clear, so the next roll asks again instead of reusing this answer.
           if (feat) this.actor.toggleRollOption("all", SLUG, feat.id, false).catch((e) => warn("Could not clear the Chronoskimmer toggle.", e));
@@ -60,6 +71,11 @@ export function registerChronoskimmer() {
       warn("Chronoskimmer prompt could not be installed.", error);
     }
   });
+}
+
+function playerOnline(actor) {
+  const owners = CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER;
+  return game.users.some((u) => u.active && !u.isGM && actor.testUserPermission(u, owners));
 }
 
 async function ask(actor) {

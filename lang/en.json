@@ -233,7 +233,8 @@
       "stabilize": "Stabilize (10)",
       "destabilize": "Destabilize (19 or 1)",
       "flatSuccess": "Destabilize your Timestream, flat check DC 11: success. {name}'s initiative die counts as 19.",
-      "flatFailure": "Destabilize your Timestream, flat check DC 11: failure. {name}'s initiative die counts as 1."
+      "flatFailure": "Destabilize your Timestream, flat check DC 11: failure. {name}'s initiative die counts as 1.",
+      "playerRolls": "{name} rolls their own initiative: their player is connected and chooses how to bend time."
     }
   }
 }

@@ -1,4 +1,4 @@
-import { SETTINGS, log, warn, stampOrigin, fromThisTab } from "./constants.js";
+import { MODULE_ID, SETTINGS, VISITOR, log, warn, stampOrigin, fromThisTab } from "./constants.js";
 import { setting } from "./settings.js";
 import { shopTransfer } from "./shop.js";
 
@@ -63,16 +63,55 @@ export function registerDropItem() {
   // and the loot actor itself. (Before 0.15 only the light was cleared and the
   // empty token stayed, hidden from players but in the GM's way.)
   Hooks.on("preDeleteItem", (item, options) => stampOrigin(options));
+  // The tab that emptied it acts, and the active GM's tab too: a player's take
+  // runs wherever PF2e carried it out, and "sometimes it stays" (session 7)
+  // was a pile emptied in a tab that did not count as its origin.
   Hooks.on("deleteItem", (item, options, userId) => {
     try {
-      if (!fromThisTab(options)) return;
       const actor = item.actor;
       if (!actor?.getFlag("raccoon-tweaks", "groundPile")) return;
-      if (actor.items.size > 0) return;
+      if (actor.items.some((i) => i.isOfType?.("physical"))) return;
+      const activeGm = game.user === game.users.activeGM && !VISITOR;
+      if (!fromThisTab(options) && !activeGm) return;
       removeEmptyPile(actor).catch((e) => warn("Could not remove the empty pile.", e));
     } catch (error) {
       warn("Pile cleanup failed.", error);
     }
+  });
+
+  // Take All on a pile's sheet: everything to the user's character, or to the
+  // token the GM has selected. Through PF2e's own transfer, so a player's take
+  // is relayed to the GM like a drag.
+  Hooks.on("renderLootSheetPF2e", (app, html) => {
+    try {
+      const pile = app.actor;
+      if (!pile?.getFlag("raccoon-tweaks", "groundPile")) return;
+      const root = html instanceof HTMLElement ? html : html?.[0];
+      if (!root || root.querySelector(".raccoon-take-all")) return;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "raccoon-take-all";
+      button.innerHTML = `<i class="fa-solid fa-hand-holding"></i> ${game.i18n.localize("raccoon-tweaks.drop.takeAll")}`;
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        button.disabled = true;
+        takeAll(pile).catch((e) => warn("Take all failed.", e)).finally(() => { button.disabled = false; });
+      });
+      const header = root.querySelector("section.content > .sheet-header");
+      if (header) header.after(button);
+      else (root.querySelector("section.content") ?? root.querySelector(".window-content") ?? root).prepend(button);
+    } catch (error) {
+      warn("Take all button failed.", error);
+    }
+  });
+
+  // Piles emptied while nobody's tab was there to clean up, and the world
+  // actors that unlinked piles used to leave behind.
+  Hooks.once("ready", () => {
+    const api = game.modules.get(MODULE_ID).api ?? (game.modules.get(MODULE_ID).api = {});
+    api.piles = { sweep: sweepPiles };
+    if (game.user !== game.users.activeGM || VISITOR) return;
+    setTimeout(() => sweepPiles().then((n) => n && log(`Swept ${n} empty pile(s).`)).catch((e) => warn("Pile sweep failed.", e)), 5000);
   });
 
   // The light is read before the change lands: once PF2e marks the item
@@ -155,6 +194,10 @@ async function dropItem(actor, item, light, prevCarry, prevHands, square = null)
       foundry.utils.setProperty(copy, "flags.raccoon-tweaks.prevCarry", prev);
       await pile.actor.createEmbeddedDocuments("Item", [copy], { raccoonStack: true });
       await item.update({ "system.equipped.carryType": prevCarry, "system.equipped.handsHeld": prevCarry === "held" ? 1 : 0, "flags.raccoon-tweaks.-=prevCarry": null }, { raccoonStack: true });
+      // The Torch module counts a stack down to 0 and leaves it there: the last
+      // torch, lit and dropped, stayed on the sheet as "Torch x0" (session 7).
+      const left = actor.items.get(item.id);
+      if (left && left.quantity <= 0) await left.delete({ raccoonStack: true });
     } else {
       // Nothing was consumed: the lit torch is one unit of the dropped stack.
       // PF2e marked the whole stack dropped; whatever stays in the pack goes
@@ -179,14 +222,62 @@ async function dropItem(actor, item, light, prevCarry, prevHands, square = null)
   ui.notifications.info(game.i18n.format("raccoon-tweaks.drop.done", { item: item.name }));
 }
 
-/** Tokens of an emptied pile on every scene, then the actor. */
+const removing = new Set();
+const hasPhysical = (actor) => Boolean(actor?.items?.some?.((i) => i.isOfType?.("physical")));
+
+/**
+ * The empty pile's tokens on every scene, then its world actor. A pile's token
+ * is unlinked, so the actor that just lost its last item is usually the
+ * token's synthetic actor: deleting that after its token was gone threw the
+ * missing-token error the GM saw (session 7), and the world actor stayed in
+ * the Treasure folder. Open sheets close first.
+ */
 async function removeEmptyPile(actor) {
-  for (const scene of game.scenes) {
-    const ids = scene.tokens.filter((t) => t.actorId === actor.id).map((t) => t.id);
-    if (ids.length) await scene.deleteEmbeddedDocuments("Token", ids);
+  const id = actor.id;
+  if (removing.has(id)) return;
+  removing.add(id);
+  try {
+    const base = game.actors.get(id) ?? null;
+    // Not awaited: a sheet that is still rendering never finishes closing, and
+    // waiting on it left the pile half removed and every later try blocked.
+    const close = (doc) => { try { if (doc?.sheet?.rendered) doc.sheet.close({ force: true }); } catch { /* already closing */ } };
+    close(actor);
+    close(base);
+    for (const scene of game.scenes) {
+      const tokens = scene.tokens.filter((t) => t.actorId === id);
+      for (const t of tokens) close(t.actor);
+      const ids = tokens.filter((t) => !hasPhysical(t.actor)).map((t) => t.id);
+      if (ids.length) await scene.deleteEmbeddedDocuments("Token", ids);
+    }
+    const stillPlaced = game.scenes.some((s) => s.tokens.some((t) => t.actorId === id));
+    if (base && !stillPlaced && !hasPhysical(base)) await base.delete();
+    log(`Removed the empty pile ${actor.name} (${id}).`);
+  } finally {
+    setTimeout(() => removing.delete(id), 2000);
   }
-  await actor.delete();
-  log(`Removed the empty pile ${actor.name}.`);
+}
+
+/** Every pile with nothing left in it, anywhere. @returns how many were removed */
+export async function sweepPiles() {
+  let removed = 0;
+  for (const base of game.actors.filter((a) => a.type === "loot" && a.getFlag("raccoon-tweaks", "groundPile"))) {
+    const tokens = game.scenes.contents.flatMap((s) => s.tokens.filter((t) => t.actorId === base.id));
+    if (hasPhysical(base) || tokens.some((t) => hasPhysical(t.actor))) continue;
+    await removeEmptyPile(base);
+    removed += 1;
+  }
+  return removed;
+}
+
+async function takeAll(pile) {
+  const taker = game.user.character ?? canvas.tokens?.controlled?.[0]?.actor ?? null;
+  if (!taker?.isOfType?.("character", "npc") || taker.getFlag("raccoon-tweaks", "groundPile")) {
+    ui.notifications.warn(game.i18n.localize("raccoon-tweaks.drop.takeAllNoTaker"));
+    return;
+  }
+  const items = pile.items.filter((i) => i.isOfType?.("physical") && !i.system?.containerId);
+  for (const item of items) await pile.transferItemToActor(taker, item, item.quantity);
+  log(`${taker.name} took ${items.length} item(s) from ${pile.name}.`);
 }
 
 /**

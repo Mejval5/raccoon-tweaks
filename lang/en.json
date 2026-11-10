@@ -157,14 +157,20 @@
       "noToken": "This character has no token on the current scene, so the dropped item stays in the inventory.",
       "done": "{item} is on the ground.",
       "tooFar": "Too far: drop it within one square of your token.",
-      "failed": "Drop failed: {error}"
+      "failed": "Drop failed: {error}",
+      "takeAll": "Take all",
+      "takeAllNoTaker": "Select your token (or have a character assigned) to take things."
     },
     "perf": {
       "toggle": "Performance meter"
     },
     "autoApply": {
       "damageFailed": "Damage was not applied automatically, click the card: {error}",
-      "immunityFailed": "Treat Wounds Immunity was not applied, drag it from the card: {error}"
+      "immunityFailed": "Treat Wounds Immunity was not applied, drag it from the card: {error}",
+      "drinkNoStrike": "Drink of my Foes: no damage from {name}'s ikon in the last ten minutes, set the temporary HP by hand.",
+      "drinkDone": "Drink of my Foes: {name} gains {temp} temporary HP, half of the {dealt} damage dealt.",
+      "drinkNoGain": "Drink of my Foes: half of {dealt} is {temp}, no more than the {before} temporary HP {name} already has.",
+      "drinkSpark": "The spark leaves the ikon."
     },
     "transfer": {
       "requested": "{item} handed to {target} (done by the GM's table).",
@@ -189,7 +195,8 @@
       "dialogIntro": "Discount each character gets when buying here.",
       "buybackLabel": "Buys from players at",
       "infiniteLabel": "Endless stock",
-      "save": "Save"
+      "save": "Save",
+      "rowDiscount": "List price {listed}, your discount {discount} %"
     },
     "persona": {
       "open": "NPC sheet",

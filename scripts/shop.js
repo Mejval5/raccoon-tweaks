@@ -135,6 +135,7 @@ export function registerShop() {
         const me = game.user.character;
         const discount = me ? discountFor(merchant, me) : 0;
         note.textContent = discount ? t("playerNoteDiscount", { discount, buyback: buybackOf(merchant) }) : t("playerNote", { buyback: buybackOf(merchant) });
+        if (discount) showDiscountedPrices(root, merchant, discount);
       }
       (root.querySelector(".sheet-body") ?? root.querySelector(".window-content") ?? root).prepend(note);
     } catch (error) {
@@ -157,6 +158,30 @@ export function registerShop() {
       state: (merchantRef) => { const m = find(merchantRef, "loot"); return m ? { merchant: m.name, buyback: buybackOf(m), infinite: isInfinite(m), discounts: Object.fromEntries(Object.entries(shopFlags(m).discounts ?? {}).map(([id, p]) => [game.actors.get(id)?.name ?? id, p])) } : null; },
     };
   });
+}
+
+/**
+ * Each row's price as this customer will pay it. The sheet shows either the
+ * unit price or the value of the whole stack; whichever matches the text is
+ * the one replaced, and the list price stays in the tooltip.
+ */
+function showDiscountedPrices(root, merchant, discount) {
+  const Coins = game.pf2e.Coins;
+  const factor = (100 - discount) / 100;
+  for (const li of root.querySelectorAll("li[data-item-id]")) {
+    const item = merchant.items.get(li.dataset.itemId);
+    if (!item?.isOfType?.("physical")) continue;
+    const span = li.querySelector(":scope > .data > .price > span[data-visibility]");
+    const text = span && [...span.childNodes].find((n) => n.nodeType === Node.TEXT_NODE && n.textContent.trim());
+    if (!text) continue;
+    const shown = text.textContent.trim();
+    const stack = Coins.fromPrice(item.price, item.quantity);
+    const listed = stack.toString() === shown ? stack : new Coins(item.price.value);
+    const paid = listed.scale(factor);
+    text.textContent = ` ${paid.toString()} `;
+    span.classList.add("raccoon-discounted");
+    span.dataset.tooltip = game.i18n.format("raccoon-tweaks.shop.rowDiscount", { listed: listed.toString(), discount });
+  }
 }
 
 /** GM dialog: one discount per player character, the buy-back rate, endless stock. */

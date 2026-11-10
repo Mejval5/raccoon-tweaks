@@ -20,6 +20,7 @@ import { registerShop } from "./shop.js";
 import { registerLiking } from "./liking.js";
 import { registerPersona } from "./persona.js";
 import { registerSortRepair } from "./sort-repair.js";
+import { registerFirearms } from "./firearms.js";
 
 // First thing, before any hook: the timeline measures everything after this line.
 installBootTimeline();
@@ -41,6 +42,7 @@ Hooks.once("init", () => {
   registerLiking();
   registerPersona();
   registerSortRepair();
+  registerFirearms();
   installPerfMeter();
   installTokenizerPatch();
   registerTokenizerTweaks();

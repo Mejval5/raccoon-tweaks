@@ -116,6 +116,14 @@
       "shop": {
         "name": "Merchants pay and give discounts",
         "hint": "A player's character who gives an item to a merchant is paid for it (50 % of the price unless the merchant is set otherwise, full value for treasure). A character who takes an item pays the full price minus the discount the GM gave that character at that merchant. Set both on the merchant's sheet. Runs in the GM's tab; off while pf2e-toolbelt's Better Merchant is enabled."
+      },
+      "firearms": {
+        "name": "Firearms must be cleaned daily",
+        "hint": "A character with a firearm cleans it once per calendar day (one hour): a button at the top of the inventory, or the action 'Clean Firearms'. It resets when the date changes. While dirty, each firearm attack may jam."
+      },
+      "firearmJam": {
+        "name": "Jam chance of a dirty firearm (%)",
+        "hint": "Rolled on every attack with a firearm not cleaned today. 0 turns jamming off but keeps the tracking."
       }
     },
     "ai": {
@@ -235,6 +243,18 @@
       "flatSuccess": "Destabilize your Timestream, flat check DC 11: success. {name}'s initiative die counts as 19.",
       "flatFailure": "Destabilize your Timestream, flat check DC 11: failure. {name}'s initiative die counts as 1.",
       "playerRolls": "{name} rolls their own initiative: their player is connected and chooses how to bend time."
+    },
+    "firearms": {
+      "barClean": "Firearms cleaned today.",
+      "barDirty": "Firearms not cleaned today: {chance} % chance to jam on each shot.",
+      "button": "Clean (1 hour)",
+      "cleaned": "{name} spends an hour cleaning: {guns}. Clean until tomorrow.",
+      "noFirearm": "{name} has no firearm to clean.",
+      "jammed": "{name}'s {weapon} jams (d100 {total}, dirty, {chance} % chance). An Interact action clears it.",
+      "jamEffect": "Jammed firearm",
+      "jamDescription": "{weapon} is jammed and cannot fire. Spend an Interact action to clear it, then remove this effect.",
+      "actionName": "Clean Firearms",
+      "actionDescription": "One hour with the cleaning kit. Your firearms are clean until the end of the day; a dirty firearm may jam on each shot. Posting this action marks them clean."
     }
   }
 }

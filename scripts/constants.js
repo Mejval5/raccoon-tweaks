@@ -51,6 +51,8 @@ export const SETTINGS = {
   LIKING: "liking-meter",
   PERSONA_SOURCE: "persona-source",
   SORT_REPAIR: "inventory-order-repair",
+  FIREARMS: "firearm-cleaning",
+  FIREARM_JAM: "firearm-jam-chance",
   PERF_METER: "perf-meter",
   AUTO_TREAT_WOUNDS: "auto-treat-wounds-immunity",
   AUTO_APPLY_DAMAGE: "auto-apply-damage",

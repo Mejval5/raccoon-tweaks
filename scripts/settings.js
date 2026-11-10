@@ -101,6 +101,25 @@ export function registerSettings() {
     default: true,
   });
 
+  // Firearms must be cleaned once a day or may jam (firearms.js).
+  game.settings.register(MODULE_ID, SETTINGS.FIREARMS, {
+    name: t("firearms.name"),
+    hint: t("firearms.hint"),
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+  game.settings.register(MODULE_ID, SETTINGS.FIREARM_JAM, {
+    name: t("firearmJam.name"),
+    hint: t("firearmJam.hint"),
+    scope: "world",
+    config: true,
+    type: Number,
+    range: { min: 0, max: 100, step: 1 },
+    default: 5,
+  });
+
   // Ten real minutes at the table = one ten-minute jump of the world time (world-clock.js).
   game.settings.register(MODULE_ID, SETTINGS.WORLD_CLOCK, {
     name: t("worldClock.name"),

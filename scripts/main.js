@@ -16,6 +16,7 @@ import { registerTransfer } from "./transfer.js";
 import { applyToolbeltDefaults } from "./toolbelt-defaults.js";
 import { registerChronoskimmer } from "./chronoskimmer.js";
 import { registerWorldClock } from "./world-clock.js";
+import { registerShop } from "./shop.js";
 
 // First thing, before any hook: the timeline measures everything after this line.
 installBootTimeline();
@@ -33,6 +34,7 @@ Hooks.once("init", () => {
   applyToolbeltDefaults();
   registerChronoskimmer();
   registerWorldClock();
+  registerShop();
   installPerfMeter();
   installTokenizerPatch();
   registerTokenizerTweaks();

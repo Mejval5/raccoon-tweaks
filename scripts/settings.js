@@ -58,6 +58,16 @@ export function registerSettings() {
     default: "Na zemi",
   });
 
+  // Merchants pay for what players give them and charge per-customer prices (shop.js).
+  game.settings.register(MODULE_ID, SETTINGS.SHOP, {
+    name: t("shop.name"),
+    hint: t("shop.hint"),
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
   // Ten real minutes at the table = one ten-minute jump of the world time (world-clock.js).
   game.settings.register(MODULE_ID, SETTINGS.WORLD_CLOCK, {
     name: t("worldClock.name"),

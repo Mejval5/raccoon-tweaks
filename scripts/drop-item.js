@@ -1,5 +1,6 @@
 import { SETTINGS, log, warn, stampOrigin, fromThisTab } from "./constants.js";
 import { setting } from "./settings.js";
+import { shopTransfer } from "./shop.js";
 
 /**
  * PF2e's "Dropped" carry state (the grip-lines entry in the inventory's carry
@@ -216,16 +217,17 @@ function installTransferWrapper() {
     libWrapper.register("raccoon-tweaks", path, async function (wrapped, target, item, ...rest) {
       // Read the flag before the original runs: the ground copy may be deleted by it.
       const lit = Boolean(item?.getFlag?.("raccoon-tweaks", "litOnGround"));
-      const result = await wrapped(target, item, ...rest);
+      // Merchant trades are priced here (shop.js); everything else passes straight through.
+      const result = await shopTransfer(this, wrapped, target, item, ...rest);
       if (lit) await after(this, target, { name: item?.name, getFlag: () => lit }, result);
       return result;
-    }, "WRAPPER");
+    }, "MIXED");   // MIXED, not WRAPPER: a purchase the customer cannot afford ends without the original running
     log("transferItemToActor wrapped (libWrapper).");
   } else {
     const original = proto.transferItemToActor;
     proto.transferItemToActor = async function (target, item, ...rest) {
       const lit = Boolean(item?.getFlag?.("raccoon-tweaks", "litOnGround"));
-      const result = await original.call(this, target, item, ...rest);
+      const result = await shopTransfer(this, (...args) => original.call(this, ...args), target, item, ...rest);
       if (lit) await after(this, target, { name: item?.name, getFlag: () => lit }, result);
       return result;
     };

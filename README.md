@@ -397,6 +397,30 @@ this one or a manual jump, clears the count, so ten minutes are always measured 
 time the clock moved. `game.modules.get("raccoon-tweaks").api.worldClock.state()` shows the
 count and what is holding it.
 
+## 17. Merchants pay, and give discounts
+
+A PF2e merchant sells at the listed price and takes whatever a player drops on it for nothing.
+With **Merchants pay and give discounts** on (world setting, default on):
+
+- a player's character who gives an item to a merchant is paid **50 % of its price** (the
+  merchant's buy-back rate; treasure such as gems and art goes at full value, as in the rules);
+- a character who takes an item pays the **full price minus that character's discount** at that
+  merchant;
+- a merchant with **endless stock** keeps its quantities.
+
+The GM sets all three on the merchant's sheet: a line at the top shows the buy-back rate, the stock
+mode and the discounts, with an **Edit** link that opens one field per player character. A player
+sees their own discount there. Every trade posts a line with the amount, and a purchase the
+customer cannot afford posts why. From a macro:
+`game.modules.get("raccoon-tweaks").api.shop.setDiscount("Keeleno", "Arnold", 20)`.
+
+It runs inside the module's `transferItemToActor` wrapper, in a GM's tab, which is where the
+system carries out a player's drag onto or from a merchant anyway. Stored on the merchant as
+`flags.raccoon-tweaks.shop = { discounts: { <actorId>: percent }, buyback, infinite }`. It stands
+down while pf2e-toolbelt's Better Merchant is enabled, so the two never both charge. **Keep one GM
+tab in the world:** Foundry lets every GM tab carry out a player's request, and two tabs can do a
+purchase from a stack twice.
+
 ## Install
 
 Self-hosted, container launched with `--noupdate`, so drop it in by hand:
@@ -433,6 +457,7 @@ scripts/
   transfer.js         plain drag hands a stack to another actor, Shift keeps PF2e's dialogs
   chronoskimmer.js    Chronoskimmer Dedication: a question before the initiative roll instead of the sheet toggle
   world-clock.js      ten real minutes at the table = one ten-minute jump of the world time
+  shop.js             merchants pay for what they are given, per-character discounts, endless stock
   auto-apply.js       Treat Wounds immunity onto the patient, damage rolls onto their target (two world settings)
   perf-meter.js       GM performance panel with hook attribution
 styles/raccoon-tweaks.css

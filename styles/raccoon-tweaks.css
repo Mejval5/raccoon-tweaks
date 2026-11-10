@@ -80,3 +80,13 @@ body #pf2e-hud-persistent [data-panel="effects"] article {
 #raccoon-perf-meter .rt-perf-body > div { display: flex; justify-content: space-between; gap: 8px; }
 #raccoon-perf-meter .rt-perf-body > div span { opacity: 0.8; }
 #raccoon-perf-meter .rt-perf-h { margin-top: 3px; opacity: 0.6; font-variant: small-caps; justify-content: flex-start !important; }
+
+/* shop.js: one line on a merchant sheet saying what this customer pays */
+.raccoon-shop-note {
+  margin: 4px 8px;
+  padding: 3px 8px;
+  border-left: 3px solid var(--color-warm-2, #c9593f);
+  background: rgba(0, 0, 0, 0.06);
+  font-size: var(--font-size-12, 12px);
+}
+.raccoon-shop-note a { text-decoration: underline; cursor: pointer; }

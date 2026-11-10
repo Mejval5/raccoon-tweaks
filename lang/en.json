@@ -100,6 +100,10 @@
       "worldClock": {
         "name": "World clock follows the table",
         "hint": "Every ten real minutes the world time jumps forward by ten minutes, so effect durations and the calendar keep up with play. Counted in the GM's tab only while the game is not paused, no combat is running and a player is connected; any change of the world time restarts the count."
+      },
+      "shop": {
+        "name": "Merchants pay and give discounts",
+        "hint": "A player's character who gives an item to a merchant is paid for it (50 % of the price unless the merchant is set otherwise, full value for treasure). A character who takes an item pays the full price minus the discount the GM gave that character at that merchant. Set both on the merchant's sheet. Runs in the GM's tab; off while pf2e-toolbelt's Better Merchant is enabled."
       }
     },
     "ai": {
@@ -155,6 +159,25 @@
       "refused": "{item} was not handed to {target}: {reason}.",
       "noAnswer": "No answer from the GM's table, so {item} is still yours. Is a GM tab open? Hold Shift while dropping for the system's trade.",
       "message": "{source} hands {quantity}x {item} to {target}."
+    },
+    "shop": {
+      "bought": "{customer} buys {quantity}× {item} for {cost}.",
+      "boughtDiscount": "{customer} buys {quantity}× {item} for {cost} ({discount} % off {full}).",
+      "sold": "{customer} sells {quantity}× {item} for {payout} ({rate} % of its price).",
+      "soldWorthless": "{customer} hands over {quantity}× {item}; it is worth nothing.",
+      "cannotAfford": "{customer} cannot afford {quantity}× {item}: it costs {cost}.",
+      "gmNote": "Buys at {buyback} % · stock {stock} · discounts: {discounts}.",
+      "playerNote": "This merchant buys your things at {buyback} % of their price.",
+      "playerNoteDiscount": "Your discount here: {discount} %. This merchant buys your things at {buyback} % of their price.",
+      "none": "none",
+      "endless": "endless",
+      "limited": "as listed",
+      "edit": "Edit",
+      "dialogTitle": "Prices at {merchant}",
+      "dialogIntro": "Discount each character gets when buying here.",
+      "buybackLabel": "Buys from players at",
+      "infiniteLabel": "Endless stock",
+      "save": "Save"
     },
     "chrono": {
       "title": "Initiative: {name} bends time",

@@ -37,6 +37,7 @@ export const SETTINGS = {
   QUICK_TRANSFER: "quick-transfer",
   CHRONOSKIMMER_PROMPT: "chronoskimmer-prompt",
   WORLD_CLOCK: "world-clock-tick",
+  SHOP: "shop-prices",
   PERF_METER: "perf-meter",
   AUTO_TREAT_WOUNDS: "auto-treat-wounds-immunity",
   AUTO_APPLY_DAMAGE: "auto-apply-damage",

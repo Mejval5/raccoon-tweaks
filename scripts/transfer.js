@@ -13,23 +13,43 @@ import { setting } from "./settings.js";
  *
  * So: a plain drag of a physical item onto a character or NPC moves the whole
  * stack at once. Between two actors the user owns it is a direct transfer.
- * Onto an actor the user does not own, the active GM's tab does the transfer
- * on a socket request from this module, after checking that the requester owns
- * the source and the two are allies, and posts a short chat line. With Shift
- * held, or with no GM online for the relayed case, PF2e's own flow runs.
- * Loot actors and merchants are never touched: buying stays buying.
+ * Onto an actor the user does not own, the giver cannot write, so the request
+ * is left as a flag on the giver's own actor; the active GM's tab sees that
+ * update, checks that the requester owns the source and that the two are
+ * allies, moves the item, posts a short chat line and writes the outcome back,
+ * and the giver is told whether it happened. With Shift held, or with no GM
+ * online, PF2e's own flow runs. Loot actors and merchants are never touched:
+ * buying stays buying.
+ *
+ * Why a flag and not a module socket: 0.17 and 0.18 emitted on
+ * `module.raccoon-tweaks`, but the manifest had no `"socket": true`, so
+ * Foundry dropped every request without an error and the giver was still told
+ * it had worked (session 7). A socket also needs a server restart to switch
+ * on; a document update needs nothing and is delivered to every client.
  */
+const REQUEST = "handOver";
+const RESULT = "handOverResult";
+const ANSWER_TIMEOUT_MS = 8000;
+const STALE_MS = 30000;
+const pending = new Map();                                             // request id -> { timer, item, target }
+
 export function registerTransfer() {
   // At `ready`, not `setup`: in v14 the registered sheet classes are not all in
   // CONFIG.Actor.sheetClasses before then, and the actors' own sheets are the
   // surest place to find the system's base class.
   Hooks.once("ready", installMoveWrapper);
-  Hooks.once("ready", () => {
-    game.socket.on(`module.${MODULE_ID}`, (payload, userId) => {
-      if (payload?.type !== "transfer") return;
-      if (game.user !== game.users.activeGM) return;
-      enactTransfer(payload, userId).catch((e) => warn("Relayed hand-over failed.", e));
-    });
+
+  Hooks.on("updateActor", (actor, changes, options, userId) => {
+    try {
+      const flags = changes?.flags?.[MODULE_ID];
+      if (!flags) return;
+      if (flags[REQUEST] && game.user === game.users.activeGM) {
+        serve(actor, flags[REQUEST], userId).catch((e) => warn("Relayed hand-over failed.", e));
+      }
+      if (flags[RESULT]) settle(flags[RESULT]);
+    } catch (error) {
+      warn("Hand-over hook failed.", error);
+    }
   });
 }
 
@@ -77,31 +97,67 @@ async function quickHandOver(event, item, target) {
   // Not ours: the GM's tab does it. Without a GM the system's trade is the only way.
   if (!game.users.activeGM) return false;
   if (!(source.isAllyOf?.(target) || target.alliance === null)) return false;
-  game.socket.emit(`module.${MODULE_ID}`, {
-    type: "transfer",
-    source: source.uuid, target: target.uuid, itemId: item.id, quantity: item.quantity,
-  });
-  ui.notifications.info(game.i18n.format("raccoon-tweaks.transfer.requested", { item: item.name, target: target.name }));
+  const id = foundry.utils.randomID();
+  const timer = setTimeout(() => {
+    if (!pending.delete(id)) return;
+    ui.notifications.warn(game.i18n.format("raccoon-tweaks.transfer.noAnswer", { item: item.name, target: target.name }));
+    source.unsetFlag(MODULE_ID, REQUEST).catch(() => {});              // do not leave it for a GM tab that opens later
+  }, ANSWER_TIMEOUT_MS);
+  pending.set(id, { timer, item: item.name, target: target.name });
+  await source.setFlag(MODULE_ID, REQUEST, { id, target: target.uuid, itemId: item.id, quantity: item.quantity, at: Date.now() });
+  log(`Asked the GM's tab to hand ${item.quantity}x ${item.name} to ${target.name} (${id}).`);
   return true;
 }
 
-async function enactTransfer({ source: sourceUuid, target: targetUuid, itemId, quantity }, userId) {
+/** The giver's side of the answer. Every client sees the result flag; only the one that asked has the id. */
+function settle({ id, ok, reason }) {
+  const request = pending.get(id);
+  if (!request) return;
+  clearTimeout(request.timer);
+  pending.delete(id);
+  if (ok) ui.notifications.info(game.i18n.format("raccoon-tweaks.transfer.requested", request));
+  else ui.notifications.warn(game.i18n.format("raccoon-tweaks.transfer.refused", { ...request, reason: reason ?? "?" }));
+}
+
+/** GM side: take the request off the actor, do it, write the outcome back. */
+async function serve(sourceActor, request, userId) {
+  if (!request?.id || Date.now() - (request.at ?? 0) > STALE_MS) return;
+  // Two tabs of the same GM user both get here. Whichever removes the request
+  // first serves it; the other finds it gone after a short, uneven wait.
+  await new Promise((resolve) => setTimeout(resolve, Math.random() * 400));
+  if (sourceActor.getFlag(MODULE_ID, REQUEST)?.id !== request.id) return;
+  await sourceActor.unsetFlag(MODULE_ID, REQUEST);
+  let result;
+  try {
+    result = await enactTransfer(sourceActor, request, userId);
+  } catch (error) {
+    warn("Relayed hand-over threw.", error);
+    result = { ok: false, reason: error.message };
+  }
+  await sourceActor.setFlag(MODULE_ID, RESULT, { id: request.id, ...result, at: Date.now() });
+}
+
+/** @returns {{ok: boolean, reason?: string}} */
+async function enactTransfer(sourceActor, { target: targetUuid, itemId, quantity }, userId) {
   const user = game.users.get(userId);
-  const source = await fromUuid(sourceUuid);
   const target = await fromUuid(targetUuid);
-  const sourceActor = source?.actor ?? source;   // a token uuid resolves to its document
-  const targetActor = target?.actor ?? target;
-  if (!user || !sourceActor || !targetActor) return;
-  if (!sourceActor.testUserPermission(user, "OWNER")) { warn(`${user.name} asked to move an item out of ${sourceActor.name} without owning it; refused.`); return; }
-  if (!targetActor.isOfType?.("character", "npc") || targetActor.isOfType("loot")) return;
-  if (!(sourceActor.isAllyOf?.(targetActor) || targetActor.alliance === null)) return;
+  const targetActor = target?.actor ?? target;   // a token uuid resolves to its document
+  if (!user || !targetActor) return { ok: false, reason: "actor not found" };
+  if (!sourceActor.testUserPermission(user, "OWNER")) {
+    warn(`${user.name} asked to move an item out of ${sourceActor.name} without owning it; refused.`);
+    return { ok: false, reason: "not your item" };
+  }
+  if (!targetActor.isOfType?.("character", "npc") || targetActor.isOfType("loot")) return { ok: false, reason: "not a character" };
+  if (!(sourceActor.isAllyOf?.(targetActor) || targetActor.alliance === null)) return { ok: false, reason: "not an ally" };
   const item = sourceActor.items.get(itemId);
-  if (!item?.isOfType?.("physical")) return;
+  if (!item?.isOfType?.("physical")) return { ok: false, reason: "item is gone" };
   const qty = Math.min(Math.max(1, Number(quantity) || 1), item.quantity);
+  const name = item.name;
   await sourceActor.transferItemToActor(targetActor, item, qty);
-  log(`Relayed hand-over for ${user.name}: ${qty}x ${item.name}, ${sourceActor.name} -> ${targetActor.name}.`);
+  log(`Relayed hand-over for ${user.name}: ${qty}x ${name}, ${sourceActor.name} -> ${targetActor.name}.`);
   await ChatMessage.create({
     speaker: ChatMessage.getSpeaker({ actor: sourceActor }),
-    content: game.i18n.format("raccoon-tweaks.transfer.message", { source: sourceActor.name, target: targetActor.name, quantity: qty, item: item.name }),
+    content: game.i18n.format("raccoon-tweaks.transfer.message", { source: sourceActor.name, target: targetActor.name, quantity: qty, item: name }),
   });
+  return { ok: true };
 }

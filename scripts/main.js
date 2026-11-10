@@ -15,6 +15,7 @@ import { registerAutoApply } from "./auto-apply.js";
 import { registerTransfer } from "./transfer.js";
 import { applyToolbeltDefaults } from "./toolbelt-defaults.js";
 import { registerChronoskimmer } from "./chronoskimmer.js";
+import { registerWorldClock } from "./world-clock.js";
 
 // First thing, before any hook: the timeline measures everything after this line.
 installBootTimeline();
@@ -31,6 +32,7 @@ Hooks.once("init", () => {
   registerTransfer();
   applyToolbeltDefaults();
   registerChronoskimmer();
+  registerWorldClock();
   installPerfMeter();
   installTokenizerPatch();
   registerTokenizerTweaks();
@@ -44,6 +46,7 @@ Hooks.once("ready", () => {
     warn("Tokenizer is not active, the Tokenizer tweaks will stay dormant.");
   }
   game.modules.get(MODULE_ID).api = {
+    ...(game.modules.get(MODULE_ID).api ?? {}),
     version: game.modules.get(MODULE_ID).version,
     generateItemImage,
   };

@@ -360,9 +360,12 @@ popup for your own actors, and for another player's character a **trade dialog t
 have to accept** (the "second confirmation" from the 2026-10-26 call). With **Hand over items
 without the dialogs** on (world setting, default on), a plain drag moves the whole stack at once.
 Between two actors you own it is a direct transfer. Onto an actor you do not own, the active GM's
-tab does the transfer on a socket request from this module, after checking that you own the source
-and the two are allies, and posts "X hands 3x Bolts to Y" in chat; with no GM online the system's
-trade runs instead. **Hold Shift** while dropping to get PF2e's own popup or trade dialog. Loot
+tab does the transfer: your request is written as a flag on your own character, the GM's tab sees
+that update, checks that you own the source and the two are allies, moves the item, posts "X hands
+3x Bolts to Y" in chat and writes the outcome back, so you are told whether it happened; with no GM
+online the system's trade runs instead. (0.17 and 0.18 used a module socket, but the manifest had
+no `"socket": true`, so Foundry dropped every request without an error and nothing was handed
+over while the giver was told it had worked. A flag needs no manifest entry and no server restart.) **Hold Shift** while dropping to get PF2e's own popup or trade dialog. Loot
 actors and merchants are never touched, so buying and looting stay as they are.
 
 The wrap is on the actor sheet's `moveItemBetweenActors`; a drop onto a token on the map goes
@@ -381,6 +384,18 @@ checkbox on the sheet never needs touching. Closing the dialog cancels the roll.
 
 The wrap is on `ActorInitiative#roll`, so it covers the sheet's initiative button and the
 encounter tracker alike. When the GM rolls for everyone, the GM gets the question.
+
+## 16. The world clock follows the table
+
+Out of combat nothing moves Foundry's world time unless the GM clicks the clock, so one-hour
+effects sit on a sheet for weeks. With **World clock follows the table** on (world setting, default
+off), the active GM's tab counts real time and, every ten real minutes, advances the world time by
+ten minutes in a single jump, which is what makes PF2e expire effects the way it does after a
+manual jump. The count runs only while the game is not paused, no combat has started (the core
+moves time by rounds there) and at least one player is connected. Any change of the world time,
+this one or a manual jump, clears the count, so ten minutes are always measured from the last
+time the clock moved. `game.modules.get("raccoon-tweaks").api.worldClock.state()` shows the
+count and what is holding it.
 
 ## Install
 
@@ -417,6 +432,7 @@ scripts/
   stack-split.js      held splits one off a stack, worn/stowed merges it back
   transfer.js         plain drag hands a stack to another actor, Shift keeps PF2e's dialogs
   chronoskimmer.js    Chronoskimmer Dedication: a question before the initiative roll instead of the sheet toggle
+  world-clock.js      ten real minutes at the table = one ten-minute jump of the world time
   auto-apply.js       Treat Wounds immunity onto the patient, damage rolls onto their target (two world settings)
   perf-meter.js       GM performance panel with hook attribution
 styles/raccoon-tweaks.css

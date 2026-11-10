@@ -58,6 +58,16 @@ export function registerSettings() {
     default: "Na zemi",
   });
 
+  // Ten real minutes at the table = one ten-minute jump of the world time (world-clock.js).
+  game.settings.register(MODULE_ID, SETTINGS.WORLD_CLOCK, {
+    name: t("worldClock.name"),
+    hint: t("worldClock.hint"),
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+  });
+
   // Asks stabilize / destabilize before an initiative roll instead of the sheet checkbox (chronoskimmer.js).
   game.settings.register(MODULE_ID, SETTINGS.CHRONOSKIMMER_PROMPT, {
     name: t("chronoskimmerPrompt.name"),

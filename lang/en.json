@@ -96,6 +96,10 @@
       "chronoskimmerPrompt": {
         "name": "Chronoskimmer: ask before rolling initiative",
         "hint": "A character with Chronoskimmer Dedication gets a question before every initiative roll: roll normally, stabilize (the die counts as 10) or destabilize (flat check DC 11, then the die counts as 19 or 1). Replaces ticking the checkbox and dropdown on the sheet; the module sets and clears that toggle itself."
+      },
+      "worldClock": {
+        "name": "World clock follows the table",
+        "hint": "Every ten real minutes the world time jumps forward by ten minutes, so effect durations and the calendar keep up with play. Counted in the GM's tab only while the game is not paused, no combat is running and a player is connected; any change of the world time restarts the count."
       }
     },
     "ai": {
@@ -148,6 +152,8 @@
     },
     "transfer": {
       "requested": "{item} handed to {target} (done by the GM's table).",
+      "refused": "{item} was not handed to {target}: {reason}.",
+      "noAnswer": "No answer from the GM's table, so {item} is still yours. Is a GM tab open? Hold Shift while dropping for the system's trade.",
       "message": "{source} hands {quantity}x {item} to {target}."
     },
     "chrono": {

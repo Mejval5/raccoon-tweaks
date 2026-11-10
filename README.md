@@ -470,6 +470,23 @@ is one and the same on both sheets, kept on the merchant. Linked by `flags.racco
 on the merchant and `flags.raccoon-tweaks.personaOf` on the NPC; deleting the NPC simply brings the
 *Make NPC sheet* link back. From a macro: `api.persona.open("Keeleno")`, `api.persona.of("Keeleno")`.
 
+## 21. One drag no longer stows a whole section
+
+PF2e 8.5.0 has a bug in its inventory drop: dropping an item onto a container re-sorts it among the
+list it came from, and when the items there share an order number (`sort`), Foundry renumbers all of
+them and PF2e writes the container on every one. One drag, and the whole Equipment section is in the
+backpack. Items made by an import, a script or the MCP arrive with `sort: 0`, so the clashes build up.
+
+With **Repair inventory order numbers** on (world setting, default on):
+
+- opening a sheet you own renumbers items that share a container and an order number, in one update;
+  the order on screen stays as it was;
+- a new physical item whose number is already taken in its container gets the next free one.
+
+A drag needs an open sheet, so the numbers are clean before it can happen. From a macro:
+`api.inventoryOrder.check("Ezekiel")` (how many would change), `.repair("Ezekiel")`, `.repairParty()`.
+A visitor tab does not repair on its own.
+
 ## Install
 
 Self-hosted, container launched with `--noupdate`, so drop it in by hand:

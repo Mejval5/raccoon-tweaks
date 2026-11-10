@@ -105,6 +105,10 @@
         "name": "Liking meter on merchants and NPCs",
         "hint": "Shows the GM, in the left panel of every merchant and NPC sheet, how much that one likes each character of the party: a bar from -10 to +10 with the PF2e attitude it falls into. Click the bar to set it. Players never see it, and nothing else reads it."
       },
+      "sortRepair": {
+        "name": "Repair inventory order numbers",
+        "hint": "Works around a PF2e bug where dragging one item into a container stows its whole section when items share the same order number. Opening a sheet you own renumbers such items (the order on screen does not change), and new items get a free number."
+      },
       "personaSource": {
         "name": "Merchant NPC: stat block to copy",
         "hint": "A merchant's sheet has an NPC sheet link that gives the person behind the counter statistics of their own. The NPC is copied from this actor the first time; give its UUID (default: Merchant from NPC Core). Empty or unreadable means a blank NPC."

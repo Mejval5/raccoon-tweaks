@@ -50,6 +50,7 @@ export const SETTINGS = {
   SHOP: "shop-prices",
   LIKING: "liking-meter",
   PERSONA_SOURCE: "persona-source",
+  SORT_REPAIR: "inventory-order-repair",
   PERF_METER: "perf-meter",
   AUTO_TREAT_WOUNDS: "auto-treat-wounds-immunity",
   AUTO_APPLY_DAMAGE: "auto-apply-damage",

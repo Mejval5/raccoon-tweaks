@@ -91,6 +91,16 @@ export function registerSettings() {
     default: DEFAULT_PERSONA_SOURCE,
   });
 
+  // Keeps inventory order numbers apart so one drag cannot stow a whole section (sort-repair.js).
+  game.settings.register(MODULE_ID, SETTINGS.SORT_REPAIR, {
+    name: t("sortRepair.name"),
+    hint: t("sortRepair.hint"),
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
   // Ten real minutes at the table = one ten-minute jump of the world time (world-clock.js).
   game.settings.register(MODULE_ID, SETTINGS.WORLD_CLOCK, {
     name: t("worldClock.name"),

@@ -58,6 +58,16 @@ export function registerSettings() {
     default: "Na zemi",
   });
 
+  // Asks stabilize / destabilize before an initiative roll instead of the sheet checkbox (chronoskimmer.js).
+  game.settings.register(MODULE_ID, SETTINGS.CHRONOSKIMMER_PROMPT, {
+    name: t("chronoskimmerPrompt.name"),
+    hint: t("chronoskimmerPrompt.hint"),
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
   // Plain drag hands the whole stack over, Shift keeps PF2e's dialogs (transfer.js).
   game.settings.register(MODULE_ID, SETTINGS.QUICK_TRANSFER, {
     name: t("quickTransfer.name"),

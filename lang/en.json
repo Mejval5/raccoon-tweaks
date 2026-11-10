@@ -92,6 +92,10 @@
       "quickTransfer": {
         "name": "Hand over items without the dialogs",
         "hint": "A plain drag of an item onto another character or NPC moves the whole stack at once: directly between your own actors, through the GM's tab for someone else's character (a short chat line says who gave what). Hold Shift to get the system's quantity popup or trade dialog instead. Loot and merchants are not affected."
+      },
+      "chronoskimmerPrompt": {
+        "name": "Chronoskimmer: ask before rolling initiative",
+        "hint": "A character with Chronoskimmer Dedication gets a question before every initiative roll: roll normally, stabilize (the die counts as 10) or destabilize (flat check DC 11, then the die counts as 19 or 1). Replaces ticking the checkbox and dropdown on the sheet; the module sets and clears that toggle itself."
       }
     },
     "ai": {
@@ -145,6 +149,18 @@
     "transfer": {
       "requested": "{item} handed to {target} (done by the GM's table).",
       "message": "{source} hands {quantity}x {item} to {target}."
+    },
+    "chrono": {
+      "title": "Initiative: {name} bends time",
+      "intro": "Chronoskimmer Dedication lets you choose how this initiative roll goes.",
+      "normalHint": "<strong>Roll normally:</strong> the d20 as it falls.",
+      "stabilizeHint": "<strong>Stabilize:</strong> no roll, the die counts as 10. Safe and average.",
+      "destabilizeHint": "<strong>Destabilize:</strong> a flat check DC 11 first. Success: the die counts as 19. Failure: it counts as 1.",
+      "normal": "Roll normally",
+      "stabilize": "Stabilize (10)",
+      "destabilize": "Destabilize (19 or 1)",
+      "flatSuccess": "Destabilize your Timestream, flat check DC 11: success. {name}'s initiative die counts as 19.",
+      "flatFailure": "Destabilize your Timestream, flat check DC 11: failure. {name}'s initiative die counts as 1."
     }
   }
 }

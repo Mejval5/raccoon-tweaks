@@ -368,6 +368,20 @@ actors and merchants are never touched, so buying and looting stay as they are.
 The wrap is on the actor sheet's `moveItemBetweenActors`; a drop onto a token on the map goes
 through the same method.
 
+## 15. Chronoskimmer Dedication asks instead of a checkbox
+
+PF2e implements the feat as a checkbox with a dropdown on the sheet: tick it, pick "Stabilize
+timestream" or one of two "Destabilize" results (after rolling the DC 11 flat check yourself), roll
+initiative, and untick it again. With **Chronoskimmer: ask before rolling initiative** on (world
+setting, default on), whoever rolls initiative for a character with the feat gets a dialog first:
+roll normally, stabilize (the die counts as 10), or destabilize (the module rolls the flat check,
+posts it to chat, and the die counts as 19 or 1). The module sets the system's own toggle for that
+roll and clears it afterwards, so the chat card shows PF2e's own substituted result and the
+checkbox on the sheet never needs touching. Closing the dialog cancels the roll.
+
+The wrap is on `ActorInitiative#roll`, so it covers the sheet's initiative button and the
+encounter tracker alike. When the GM rolls for everyone, the GM gets the question.
+
 ## Install
 
 Self-hosted, container launched with `--noupdate`, so drop it in by hand:
@@ -402,6 +416,7 @@ scripts/
   drop-item.js        Dropped carry state -> loot pile at the owner's feet, with its light
   stack-split.js      held splits one off a stack, worn/stowed merges it back
   transfer.js         plain drag hands a stack to another actor, Shift keeps PF2e's dialogs
+  chronoskimmer.js    Chronoskimmer Dedication: a question before the initiative roll instead of the sheet toggle
   auto-apply.js       Treat Wounds immunity onto the patient, damage rolls onto their target (two world settings)
   perf-meter.js       GM performance panel with hook attribution
 styles/raccoon-tweaks.css

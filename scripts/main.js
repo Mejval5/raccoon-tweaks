@@ -14,6 +14,7 @@ import { installBootTimeline } from "./boot-timeline.js";
 import { registerAutoApply } from "./auto-apply.js";
 import { registerTransfer } from "./transfer.js";
 import { applyToolbeltDefaults } from "./toolbelt-defaults.js";
+import { registerChronoskimmer } from "./chronoskimmer.js";
 
 // First thing, before any hook: the timeline measures everything after this line.
 installBootTimeline();
@@ -29,6 +30,7 @@ Hooks.once("init", () => {
   registerAutoApply();
   registerTransfer();
   applyToolbeltDefaults();
+  registerChronoskimmer();
   installPerfMeter();
   installTokenizerPatch();
   registerTokenizerTweaks();

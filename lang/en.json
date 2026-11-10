@@ -105,6 +105,10 @@
         "name": "Liking meter on merchants and NPCs",
         "hint": "Shows the GM, in the left panel of every merchant and NPC sheet, how much that one likes each character of the party: a bar from -10 to +10 with the PF2e attitude it falls into. Click the bar to set it. Players never see it, and nothing else reads it."
       },
+      "personaSource": {
+        "name": "Merchant NPC: stat block to copy",
+        "hint": "A merchant's sheet has an NPC sheet link that gives the person behind the counter statistics of their own. The NPC is copied from this actor the first time; give its UUID (default: Merchant from NPC Core). Empty or unreadable means a blank NPC."
+      },
       "shop": {
         "name": "Merchants pay and give discounts",
         "hint": "A player's character who gives an item to a merchant is paid for it (50 % of the price unless the merchant is set otherwise, full value for treasure). A character who takes an item pays the full price minus the discount the GM gave that character at that merchant. Set both on the merchant's sheet. Runs in the GM's tab; off while pf2e-toolbelt's Better Merchant is enabled."
@@ -182,6 +186,17 @@
       "buybackLabel": "Buys from players at",
       "infiniteLabel": "Endless stock",
       "save": "Save"
+    },
+    "persona": {
+      "open": "NPC sheet",
+      "openHint": "Opens {name}, the NPC behind this counter: statistics, saves and skills to roll.",
+      "create": "Make NPC sheet",
+      "createHint": "Gives this merchant an NPC of their own, copied from the default stat block, and opens it.",
+      "shop": "Shop",
+      "shopHint": "Opens {name}, the shop this NPC keeps.",
+      "created": "{name} now has an NPC sheet, copied from {from}.",
+      "createdBlank": "{name} now has a blank NPC sheet; the default stat block could not be read.",
+      "failed": "The NPC sheet could not be opened: {error}"
     },
     "visitor": {
       "notice": "Raccoon Tweaks: visitor tab. Players' requests are left to the other GM tab."

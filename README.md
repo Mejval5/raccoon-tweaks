@@ -452,6 +452,24 @@ does itself still works, so it can test. A notice says so on load, and `api.visi
 Set the flag from the console of a tab that is already in the world and reload. Do not open
 `/join` to set it: loading the join page ends that browser's login.
 
+## 20. A merchant the GM can step into
+
+A PF2e merchant is a loot actor: prices and no statistics, so the person behind the counter cannot
+notice a thief, resist a lie or be talked round with a roll. The GM's view of a merchant sheet has a
+link under the picture:
+
+- **Make NPC sheet** the first time: copies the stat block named in the world setting *Merchant NPC:
+  stat block to copy* (default **Merchant** from NPC Core: level -1, AC 13, HP 7, Perception +6,
+  Will +10, Diplomacy +12, Deception +10, Mercantile Lore +12), names it after the part of the
+  merchant's name before " · ", gives it the merchant's picture and token, puts it in the merchant's
+  folder with a linked token, and opens it.
+- **NPC sheet** from then on: opens that NPC. Its own sheet has a **Shop** link back.
+
+After that it is an ordinary NPC: change the numbers to fit the person. The liking meter (section 18)
+is one and the same on both sheets, kept on the merchant. Linked by `flags.raccoon-tweaks.persona`
+on the merchant and `flags.raccoon-tweaks.personaOf` on the NPC; deleting the NPC simply brings the
+*Make NPC sheet* link back. From a macro: `api.persona.open("Keeleno")`, `api.persona.of("Keeleno")`.
+
 ## Install
 
 Self-hosted, container launched with `--noupdate`, so drop it in by hand:

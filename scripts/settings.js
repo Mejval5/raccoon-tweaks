@@ -1,5 +1,8 @@
 import { MODULE_ID, SETTINGS, DEFAULT_CAMPAIGN, DEFAULT_STYLE } from "./constants.js";
 
+// Kept here, not imported from persona.js, which itself imports this file.
+const DEFAULT_PERSONA_SOURCE = "Compendium.pf2e.pathfinder-npc-core.Actor.qCKNT6U8O0su578A";
+
 export function registerSettings() {
   const t = (key) => `${MODULE_ID}.settings.${key}`;
 
@@ -76,6 +79,16 @@ export function registerSettings() {
     config: true,
     type: Boolean,
     default: true,
+  });
+
+  // The stat block a merchant's own NPC is copied from (persona.js).
+  game.settings.register(MODULE_ID, SETTINGS.PERSONA_SOURCE, {
+    name: t("personaSource.name"),
+    hint: t("personaSource.hint"),
+    scope: "world",
+    config: true,
+    type: String,
+    default: DEFAULT_PERSONA_SOURCE,
   });
 
   // Ten real minutes at the table = one ten-minute jump of the world time (world-clock.js).

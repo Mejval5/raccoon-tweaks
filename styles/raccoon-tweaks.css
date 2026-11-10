@@ -126,3 +126,19 @@ body #pf2e-hud-persistent [data-panel="effects"] article {
 .raccoon-liking .rl-bar i:hover { background: rgba(128, 128, 128, 0.6); }
 .raccoon-liking .rl-bar i.on { background: var(--rl); }
 .raccoon-liking .rl-bar i.zero { flex: 0 0 3px; background: currentColor; opacity: 0.7; }
+
+/* persona.js: the link between a merchant and the NPC that stands for it (GM only) */
+.raccoon-persona {
+  flex: 0 0 auto;
+  display: block;
+  margin: 6px 4px 0;
+  padding: 3px 6px;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.1);
+  font-size: var(--font-size-12, 12px);
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+.raccoon-persona:hover { background: rgba(128, 128, 128, 0.25); text-shadow: none; }

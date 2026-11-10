@@ -18,6 +18,7 @@ import { registerChronoskimmer } from "./chronoskimmer.js";
 import { registerWorldClock } from "./world-clock.js";
 import { registerShop } from "./shop.js";
 import { registerLiking } from "./liking.js";
+import { registerPersona } from "./persona.js";
 
 // First thing, before any hook: the timeline measures everything after this line.
 installBootTimeline();
@@ -37,6 +38,7 @@ Hooks.once("init", () => {
   registerWorldClock();
   registerShop();
   registerLiking();
+  registerPersona();
   installPerfMeter();
   installTokenizerPatch();
   registerTokenizerTweaks();

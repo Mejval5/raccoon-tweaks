@@ -49,6 +49,7 @@ export const SETTINGS = {
   WORLD_CLOCK: "world-clock-tick",
   SHOP: "shop-prices",
   LIKING: "liking-meter",
+  PERSONA_SOURCE: "persona-source",
   PERF_METER: "perf-meter",
   AUTO_TREAT_WOUNDS: "auto-treat-wounds-immunity",
   AUTO_APPLY_DAMAGE: "auto-apply-damage",

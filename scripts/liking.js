@@ -1,5 +1,6 @@
 import { MODULE_ID, SETTINGS, warn } from "./constants.js";
 import { setting } from "./settings.js";
+import { personaOf, shopOf } from "./persona.js";
 
 /**
  * A liking meter on merchants and NPCs: how much this one likes each player
@@ -30,7 +31,10 @@ const ATTITUDES = [[-7, "hostile"], [-3, "unfriendly"], [2, "indifferent"], [6, 
 
 export const clampLiking = (value) => { const n = Math.round(Number(value)); return Number.isFinite(n) ? Math.min(MAX, Math.max(MIN, n)) : 0; };
 export const attitudeOf = (n) => ATTITUDES.find(([top]) => clampLiking(n) <= top)[1];
-const likingFlags = (actor) => actor?.getFlag?.(MODULE_ID, "liking") ?? {};
+// A merchant and the NPC that stands for it (persona.js) are one person: the
+// values live on the merchant, and both sheets show and change the same ones.
+const home = (actor) => shopOf(actor) ?? actor;
+const likingFlags = (actor) => home(actor)?.getFlag?.(MODULE_ID, "liking") ?? {};
 export const likingFor = (actor, character) => clampLiking(likingFlags(actor)[character?.id]);
 const tracked = (actor) => Boolean(actor?.isOfType?.("npc") || (actor?.isOfType?.("loot") && actor.isMerchant));
 const signed = (n) => (n > 0 ? `+${n}` : String(n));
@@ -139,7 +143,12 @@ function build(actor) {
       paint();
       paintChips();
       // No re-render: the block is already showing the new value.
-      actor.update({ [`flags.${MODULE_ID}.liking.${character.id}`]: n }, { render: false })
+      const kept = home(actor);
+      kept.update({ [`flags.${MODULE_ID}.liking.${character.id}`]: n }, { render: false })
+        .then(() => {
+          // The other sheet of the same person, if it is open, is now behind.
+          for (const other of [kept, personaOf(kept)]) if (other && other !== actor && other.sheet?.rendered) other.sheet.render(false);
+        })
         .catch((error) => { warn("Could not save the liking value.", error); ui.notifications.warn(t("saveFailed", { name: actor.name })); });
     };
     value.addEventListener("dblclick", () => set(0));
@@ -186,7 +195,7 @@ export function registerLiking() {
         const who = find(whoRef, ["npc", "loot"]), character = find(characterRef, ["character"]);
         if (!tracked(who) || !character) throw new Error("merchant, NPC or character not found");
         const n = clampLiking(value);
-        await who.update({ [`flags.${MODULE_ID}.liking.${character.id}`]: n });
+        await home(who).update({ [`flags.${MODULE_ID}.liking.${character.id}`]: n });
         return `${who.name} -> ${character.name}: ${signed(n)} (${attitudeOf(n)})`;
       },
       /** What one merchant or NPC thinks of everyone it has a value for. */
@@ -198,7 +207,7 @@ export function registerLiking() {
       of: (characterRef) => {
         const character = find(characterRef, ["character"]);
         if (!character) return null;
-        return game.actors.filter((a) => tracked(a) && likingFor(a, character) !== 0)
+        return game.actors.filter((a) => tracked(a) && !shopOf(a) && likingFor(a, character) !== 0)
           .map((a) => ({ name: a.name, liking: likingFor(a, character), attitude: attitudeOf(likingFor(a, character)) }))
           .sort((a, b) => Math.abs(b.liking) - Math.abs(a.liking));
       },

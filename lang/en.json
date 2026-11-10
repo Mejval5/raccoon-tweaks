@@ -101,6 +101,10 @@
         "name": "World clock follows the table",
         "hint": "Every ten real minutes the world time jumps forward by ten minutes, so effect durations and the calendar keep up with play. Counted in the GM's tab only while the game is not paused, no combat is running and a player is connected; any change of the world time restarts the count."
       },
+      "liking": {
+        "name": "Liking meter on merchants and NPCs",
+        "hint": "Shows the GM, in the left panel of every merchant and NPC sheet, how much that one likes each character of the party: a bar from -10 to +10 with the PF2e attitude it falls into. Click the bar to set it. Players never see it, and nothing else reads it."
+      },
       "shop": {
         "name": "Merchants pay and give discounts",
         "hint": "A player's character who gives an item to a merchant is paid for it (50 % of the price unless the merchant is set otherwise, full value for treasure). A character who takes an item pays the full price minus the discount the GM gave that character at that merchant. Set both on the merchant's sheet. Runs in the GM's tab; off while pf2e-toolbelt's Better Merchant is enabled."
@@ -178,6 +182,20 @@
       "buybackLabel": "Buys from players at",
       "infiniteLabel": "Endless stock",
       "save": "Save"
+    },
+    "visitor": {
+      "notice": "Raccoon Tweaks: visitor tab. Players' requests are left to the other GM tab."
+    },
+    "liking": {
+      "title": "Liking",
+      "hint": "How much this one likes each character. Click the bar or the − and + to change it, double-click the number to return to zero. Only the GM sees this.",
+      "allNeutral": "all indifferent",
+      "hostile": "Hostile",
+      "unfriendly": "Unfriendly",
+      "indifferent": "Indifferent",
+      "friendly": "Friendly",
+      "helpful": "Helpful",
+      "saveFailed": "The liking value on {name} could not be saved."
     },
     "chrono": {
       "title": "Initiative: {name} bends time",

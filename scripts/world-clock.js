@@ -1,4 +1,4 @@
-import { MODULE_ID, SETTINGS, log, warn } from "./constants.js";
+import { MODULE_ID, SETTINGS, log, warn, VISITOR } from "./constants.js";
 import { setting } from "./settings.js";
 
 /**
@@ -45,6 +45,7 @@ function blockers() {
   const out = [];
   if (!setting(SETTINGS.WORLD_CLOCK)) out.push("setting off");
   if (game.user !== game.users.activeGM) out.push("not the active GM");
+  if (VISITOR) out.push("visitor tab");
   if (game.paused) out.push("paused");
   if (game.combats.some((c) => c.started)) out.push("combat");
   if (!game.users.some((u) => u.active && !u.isGM)) out.push("no player connected");

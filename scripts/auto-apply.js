@@ -1,4 +1,4 @@
-import { MODULE_ID, SETTINGS, TAB_ID, log, warn } from "./constants.js";
+import { MODULE_ID, SETTINGS, TAB_ID, log, warn, VISITOR } from "./constants.js";
 import { setting } from "./settings.js";
 
 /**
@@ -20,7 +20,7 @@ import { setting } from "./settings.js";
 export function registerAutoApply() {
   Hooks.on("createChatMessage", (message, options, userId) => {
     try {
-      if (!game.users?.activeGM || game.user !== game.users.activeGM) return;
+      if (!game.users?.activeGM || game.user !== game.users.activeGM || VISITOR) return;
       const context = message.flags?.pf2e?.context;
       if (!context) return;
 

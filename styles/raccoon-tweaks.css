@@ -90,3 +90,39 @@ body #pf2e-hud-persistent [data-panel="effects"] article {
   font-size: var(--font-size-12, 12px);
 }
 .raccoon-shop-note a { text-decoration: underline; cursor: pointer; }
+
+/* liking.js: how much a merchant or NPC likes each character, in the sheet's left panel (GM only) */
+.raccoon-liking {
+  flex: 0 0 auto;
+  margin: 6px 4px;
+  padding: 4px 6px;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.1);
+  font-size: var(--font-size-12, 12px);
+  line-height: 1.25;
+  text-align: left;
+}
+.raccoon-liking summary { cursor: pointer; }
+.raccoon-liking .rl-title { font-weight: 700; }
+.raccoon-liking .rl-chips { margin-left: 6px; opacity: 0.9; }
+.raccoon-liking .rl-chips span + span::before { content: " · "; opacity: 0.6; }
+.raccoon-liking[open] .rl-chips { display: none; }
+.raccoon-liking [data-att="hostile"] { --rl: #d9534f; }
+.raccoon-liking [data-att="unfriendly"] { --rl: #e08a4a; }
+.raccoon-liking [data-att="indifferent"] { --rl: #9a9a9a; }
+.raccoon-liking [data-att="friendly"] { --rl: #6fae5a; }
+.raccoon-liking [data-att="helpful"] { --rl: #36a89f; }
+.raccoon-liking .rl-chips span { color: var(--rl); font-weight: 600; }
+.raccoon-liking .rl-row { margin-top: 5px; }
+.raccoon-liking .rl-head { display: flex; justify-content: space-between; gap: 6px; }
+.raccoon-liking .rl-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.raccoon-liking .rl-value { flex: 0 0 auto; white-space: nowrap; color: var(--rl); font-weight: 600; font-variant-numeric: tabular-nums; cursor: default; user-select: none; }
+.raccoon-liking .rl-meter { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+.raccoon-liking .rl-step { flex: 0 0 14px; text-align: center; font-weight: 700; cursor: pointer; user-select: none; opacity: 0.75; }
+.raccoon-liking .rl-step:hover { opacity: 1; text-shadow: none; }
+.raccoon-liking .rl-bar { flex: 1 1 auto; display: flex; gap: 1px; height: 12px; }
+.raccoon-liking .rl-bar i { flex: 1 1 0; min-width: 0; border-radius: 1px; background: rgba(128, 128, 128, 0.28); cursor: pointer; }
+.raccoon-liking .rl-bar i:hover { background: rgba(128, 128, 128, 0.6); }
+.raccoon-liking .rl-bar i.on { background: var(--rl); }
+.raccoon-liking .rl-bar i.zero { flex: 0 0 3px; background: currentColor; opacity: 0.7; }

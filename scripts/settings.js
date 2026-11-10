@@ -68,6 +68,16 @@ export function registerSettings() {
     default: true,
   });
 
+  // How much each merchant and NPC likes each character, in the sheet's left panel (liking.js).
+  game.settings.register(MODULE_ID, SETTINGS.LIKING, {
+    name: t("liking.name"),
+    hint: t("liking.hint"),
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
   // Ten real minutes at the table = one ten-minute jump of the world time (world-clock.js).
   game.settings.register(MODULE_ID, SETTINGS.WORLD_CLOCK, {
     name: t("worldClock.name"),

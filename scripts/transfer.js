@@ -1,4 +1,4 @@
-import { MODULE_ID, SETTINGS, log, warn } from "./constants.js";
+import { MODULE_ID, SETTINGS, log, warn, VISITOR } from "./constants.js";
 import { setting } from "./settings.js";
 
 /**
@@ -43,7 +43,7 @@ export function registerTransfer() {
     try {
       const flags = changes?.flags?.[MODULE_ID];
       if (!flags) return;
-      if (flags[REQUEST] && game.user === game.users.activeGM) {
+      if (flags[REQUEST] && game.user === game.users.activeGM && !VISITOR) {
         serve(actor, flags[REQUEST], userId).catch((e) => warn("Relayed hand-over failed.", e));
       }
       if (flags[RESULT]) settle(flags[RESULT]);

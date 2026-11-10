@@ -421,6 +421,37 @@ down while pf2e-toolbelt's Better Merchant is enabled, so the two never both cha
 tab in the world:** Foundry lets every GM tab carry out a player's request, and two tabs can do a
 purchase from a stack twice.
 
+## 18. Liking meter on merchants and NPCs
+
+With **Liking meter on merchants and NPCs** on (world setting, default on), the GM sees a
+**Liking** block under the picture in the left panel of every merchant and NPC sheet: one bar per
+character of the party, from -10 to +10 with zero in the middle. Click a cell to set it, the − and +
+at the ends to step by one, double-click the number to return to zero. The value is saved at once,
+without redrawing the sheet.
+
+The word beside the number is the PF2e attitude the value falls into: -10 to -7 hostile, -6 to -3
+unfriendly, -2 to +2 indifferent, +3 to +6 friendly, +7 to +10 helpful. On a merchant the block
+starts unfolded. On an NPC, whose panel is narrow and full of statistics, it starts as one line
+listing the values that are not zero, and unfolds on a click.
+
+It only records: nothing reads it to change a price or a roll, and a merchant's discount is still
+set separately (section 17). Players never see it. Stored as
+`flags.raccoon-tweaks.liking = { <actorId>: n }`. From a macro:
+`api.liking.set("Keeleno", "Arnold", 4)`, `api.liking.state("Keeleno")`, and
+`api.liking.of("Arnold")` for everyone who has a value for that character.
+
+## 19. Visitor tab: a second GM login that keeps its hands off
+
+Foundry and PF2e let every tab of the active GM carry out a player's loot, give and purchase
+request, so a second GM tab does each of them a second time. A browser with
+`localStorage["raccoon-tweaks.visitor"] = "1"` is a **visitor**: at `ready` the module drops the
+system's request listener in that tab (`game.socket.off("system.pf2e")`), and its own services
+that answer players (hand-over, chat automation, world clock) stand down there. Whatever the tab
+does itself still works, so it can test. A notice says so on load, and `api.visitor` is true.
+
+Set the flag from the console of a tab that is already in the world and reload. Do not open
+`/join` to set it: loading the join page ends that browser's login.
+
 ## Install
 
 Self-hosted, container launched with `--noupdate`, so drop it in by hand:

@@ -1,4 +1,4 @@
-import { MODULE_ID, TOKENIZER_ID, log, warn } from "./constants.js";
+import { MODULE_ID, TOKENIZER_ID, VISITOR, log, warn } from "./constants.js";
 import { registerSettings } from "./settings.js";
 import { installTokenizerPatch, registerTokenizerTweaks } from "./tokenizer-patch.js";
 import { registerAiPortrait } from "./ai-portrait.js";
@@ -17,6 +17,7 @@ import { applyToolbeltDefaults } from "./toolbelt-defaults.js";
 import { registerChronoskimmer } from "./chronoskimmer.js";
 import { registerWorldClock } from "./world-clock.js";
 import { registerShop } from "./shop.js";
+import { registerLiking } from "./liking.js";
 
 // First thing, before any hook: the timeline measures everything after this line.
 installBootTimeline();
@@ -35,6 +36,7 @@ Hooks.once("init", () => {
   registerChronoskimmer();
   registerWorldClock();
   registerShop();
+  registerLiking();
   installPerfMeter();
   installTokenizerPatch();
   registerTokenizerTweaks();
@@ -47,9 +49,16 @@ Hooks.once("ready", () => {
   if (!game.modules.get(TOKENIZER_ID)?.active) {
     warn("Tokenizer is not active, the Tokenizer tweaks will stay dormant.");
   }
+  if (VISITOR) {
+    // The system registered its listener in its own ready hook, which ran before this one.
+    game.socket.off("system.pf2e");
+    log("Visitor tab: this tab will not carry out players' requests.");
+    ui.notifications.info(game.i18n.localize(`${MODULE_ID}.visitor.notice`));
+  }
   game.modules.get(MODULE_ID).api = {
     ...(game.modules.get(MODULE_ID).api ?? {}),
     version: game.modules.get(MODULE_ID).version,
+    visitor: VISITOR,
     generateItemImage,
   };
 });

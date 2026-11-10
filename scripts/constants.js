@@ -8,6 +8,16 @@ export const TAB_ID = `${Date.now().toString(36)}-${Math.random().toString(36).s
 export const stampOrigin = (options) => { options.raccoonOrigin = TAB_ID; };
 export const fromThisTab = (options) => options?.raccoonOrigin === TAB_ID;
 
+// A visitor tab: a second login of the GM user that is only there to look or to
+// test (the assistant's browser pane). Foundry and PF2e let every tab of the
+// active GM carry out a player's loot, give and purchase request, so a second
+// GM tab does each of them a second time: on 2026-11-10 a player asked for five
+// pints of oil and got ten, charged twice. A tab whose browser has
+// localStorage["raccoon-tweaks.visitor"] = "1" drops the system's request
+// listener at `ready` (main.js) and every service of this module that answers
+// players stands down in it. What the tab does on its own still works.
+export const VISITOR = (() => { try { return globalThis.localStorage?.getItem(`${MODULE_ID}.visitor`) === "1"; } catch { return false; } })();
+
 // Bundled textured backdrop that replaces Tokenizer's plain white base colour layer.
 export const TOKEN_BACKGROUND_IMAGE = `modules/${MODULE_ID}/assets/token-background.jpg`;
 
@@ -38,6 +48,7 @@ export const SETTINGS = {
   CHRONOSKIMMER_PROMPT: "chronoskimmer-prompt",
   WORLD_CLOCK: "world-clock-tick",
   SHOP: "shop-prices",
+  LIKING: "liking-meter",
   PERF_METER: "perf-meter",
   AUTO_TREAT_WOUNDS: "auto-treat-wounds-immunity",
   AUTO_APPLY_DAMAGE: "auto-apply-damage",

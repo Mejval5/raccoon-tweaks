@@ -94,20 +94,24 @@ async function dismount(rider, carrier) {
 }
 
 /** The rider's token, half size and drawn above, in the carrier's top-right corner, on every scene with both. */
-async function placeRider(rider, carrier, onlyScene = null) {
+async function placeRider(rider, carrier, onlyScene = null, at = null) {
   for (const scene of onlyScene ? [onlyScene] : game.scenes) {
     const carrierToken = scene.tokens.find((tk) => tk.actorId === carrier.id);
     const riderToken = scene.tokens.find((tk) => tk.actorId === rider.id);
     if (!carrierToken || !riderToken) continue;
     const g = scene.grid.size;
+    // Where the carrier ends up: from the move itself when there is one. In
+    // Foundry 14 the document still reads the square it left while the move is
+    // being carried out, which put the rider one step behind (Dan, 2026-11-11).
+    const cx = at?.x ?? carrierToken.x, cy = at?.y ?? carrierToken.y;
     const size = riderToken.getFlag(MODULE_ID, "carrySize") ?? { width: riderToken.width, height: riderToken.height };
     const w = 0.5;
     const update = {
       _id: riderToken.id,
       width: w, height: w,
-      x: carrierToken.x + Math.max(1, carrierToken.width) * g - w * g,
-      y: carrierToken.y,
-      elevation: carrierToken.elevation,
+      x: cx + Math.max(1, carrierToken.width) * g - w * g,
+      y: cy,
+      elevation: at?.elevation ?? carrierToken.elevation,
       sort: (carrierToken.sort ?? 0) + 1,
       [`flags.${MODULE_ID}.carrySize`]: size,
     };
@@ -117,9 +121,9 @@ async function placeRider(rider, carrier, onlyScene = null) {
 }
 
 /** A bigger party character's token under the centre of this one, on the same scene. */
-function hostUnder(token) {
+function hostUnder(token, at = null) {
   const scene = token.parent, g = scene.grid.size;
-  const cx = token.x + (token.width * g) / 2, cy = token.y + (token.height * g) / 2;
+  const cx = (at?.x ?? token.x) + (token.width * g) / 2, cy = (at?.y ?? token.y) + (token.height * g) / 2;
   return scene.tokens.find((other) => {
     if (other.id === token.id || !other.actor?.isOfType?.("character") || RIDER_SIZES.has(other.actor.size)) return false;
     if (other.getFlag(MODULE_ID, "carrySize")) return false;
@@ -147,14 +151,15 @@ export function registerCarry() {
       if (!moved && !("elevation" in changes || "level" in changes)) return;
       const actor = token.actor;
       if (!actor?.isOfType?.("character")) return;
+      const at = { x: changes.x ?? token._source.x, y: changes.y ?? token._source.y, elevation: changes.elevation ?? token._source.elevation };
       if (RIDER_SIZES.has(actor.size) && moved) {
-        const host = hostUnder(token)?.actor ?? null;
+        const host = hostUnder(token, at)?.actor ?? null;
         const current = carrierOf(actor);
         once(actor.id, () => (host ? mount(actor, host) : current ? dismount(actor, current) : null))
           .catch((e) => warn("Climbing on or off failed.", e));
         return;
       }
-      for (const r of ridersOf(actor)) placeRider(r, actor, token.parent).catch((e) => warn("Rider follow failed.", e));
+      for (const r of ridersOf(actor)) placeRider(r, actor, token.parent, at).catch((e) => warn("Rider follow failed.", e));
     } catch (error) {
       warn("Carry token hook failed.", error);
     }

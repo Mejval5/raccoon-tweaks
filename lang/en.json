@@ -127,7 +127,7 @@
       },
       "carry": {
         "name": "Ride on another character's back",
-        "hint": "Drop a Small or Tiny character's token onto a bigger party member's token and it climbs on: the token shrinks, sits on top and moves with the carrier, and the carrier carries the rider's body plus gear, minus 2 Bulk. Drag it off and it climbs down. Carried out by the GM's tab."
+        "hint": "A Small or Tiny character targets a bigger party member (T) and uses the action Climb On: the token jumps onto theirs, shrinks and moves with them, and the carrier carries the rider's body plus gear, minus 2 Bulk. Dragging the rider's token away, or the action with no target, climbs down. Carried out by the GM's tab."
       }
     },
     "ai": {
@@ -262,7 +262,13 @@
     },
     "carry": {
       "itemName": "{name} (on the back)",
-      "itemDescription": "{name} rides on your back. Bulk = body by size plus everything {name} carries, minus 2, like a backpack. Drag {name}'s token off yours to set them down."
+      "itemDescription": "{name} rides on your back. Bulk = body by size plus everything {name} carries, minus 2, like a backpack. {name} climbs down by moving away.",
+      "actionName": "Climb On",
+      "actionDescription": "Target an ally (T) and use this to climb onto their back: your token rides on theirs and moves with it, and they carry your weight. Move your token away, or use this with no target, to climb down.",
+      "needTarget": "{name}: target the ally to climb onto first (T), then use Climb On.",
+      "oneTarget": "Climb On: target only the one ally to ride on.",
+      "tooSmall": "{name} is too small to carry anyone.",
+      "carrierRiding": "{name} is riding someone already."
     }
   }
 }

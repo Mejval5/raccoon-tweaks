@@ -1,28 +1,28 @@
-import { MODULE_ID, SETTINGS, VISITOR, log, warn } from "./constants.js";
+import { MODULE_ID, SETTINGS, VISITOR, log, warn, stampOrigin, fromThisTab } from "./constants.js";
 import { setting } from "./settings.js";
 
 /**
  * One character riding on another's back: Rikkit on Arnold (session 9).
  *
- * Done by moving tokens (Dan, 2026-11-11: "when we move Rikkit on the token, he
- * climbs on, and when we move him off, he climbs off"):
+ * Climbing on is an action (Dan, 2026-11-11: dropping the token on the carrier
+ * was unreliable): the rider targets the carrier (T) and posts the action
+ * "Climb On" (slug `climb-on-back`) from their sheet. The rider's token jumps
+ * onto the carrier's, shrinks to half size, sits in the top-right corner drawn
+ * above, and from then on moves with it.
  *
- * - A Small or Tiny character's token dropped onto a bigger party character's
- *   token climbs on: it shrinks to half size, sits in the carrier's top-right
- *   corner drawn above the carrier's token, and from then on moves with it.
- * - Dragged off the carrier's token, it climbs down and gets its size back.
+ * Climbing down: drag the rider's token anywhere, or post the same action again
+ * with no target.
+ *
  * - While riding, the carrier's inventory holds "<rider> (on the back)", whose
  *   Bulk is the rider's body by size (Tiny 1, Small 3, Medium 6) plus everything
  *   the rider carries, minus 2, like a backpack (Dan, 2026-11-11). It follows
  *   the rider's inventory and goes when the rider climbs down.
  *
- * No buttons and no bar on the sheet (Dan: "remove it from inventory"): the
- * tokens are the interface.
- *
  * The two characters belong to different players, so everything is done by the
  * active GM's tab (never a visitor tab), off the token and item hooks every
- * client receives. The state is `flags.raccoon-tweaks.carry = { by }` on the
- * rider and `flags.raccoon-tweaks.carrySize` on the shrunk token.
+ * client receives. The rider's own tab only writes `flags.raccoon-tweaks.carry =
+ * { by }` on the rider (or removes it); the GM tab brings the tokens and the
+ * weight in line with that flag. `flags.raccoon-tweaks.carrySize` marks the shrunk token.
  */
 const SIZE_BULK = { tiny: 1, sm: 3, med: 6, lg: 12, huge: 24, grg: 48 };
 const RIDER_SIZES = new Set(["tiny", "sm"]);
@@ -120,15 +120,30 @@ async function placeRider(rider, carrier, onlyScene = null, at = null) {
   }
 }
 
-/** A bigger party character's token under the centre of this one, on the same scene. */
-function hostUnder(token, at = null) {
-  const scene = token.parent, g = scene.grid.size;
-  const cx = (at?.x ?? token.x) + (token.width * g) / 2, cy = (at?.y ?? token.y) + (token.height * g) / 2;
-  return scene.tokens.find((other) => {
-    if (other.id === token.id || !other.actor?.isOfType?.("character") || RIDER_SIZES.has(other.actor.size)) return false;
-    if (other.getFlag(MODULE_ID, "carrySize")) return false;
-    return cx >= other.x && cx < other.x + other.width * g && cy >= other.y && cy < other.y + other.height * g;
-  }) ?? null;
+/** Make the tokens and the weight match the rider's flag. */
+async function reconcile(rider) {
+  const carrier = carrierOf(rider);
+  if (carrier) return mount(rider, carrier);
+  const leftover = game.actors.some((a) => weightItemOf(a, rider))
+    || game.scenes.some((sc) => sc.tokens.some((tk) => tk.actorId === rider.id && tk.getFlag(MODULE_ID, "carrySize")));
+  if (leftover) return dismount(rider, null);
+}
+
+/** The action, in the tab of whoever posted it: climb onto the one target, or climb down. */
+async function climbAction(message) {
+  const rider = message.actor;
+  if (!rider?.isOfType?.("character") || !rider.isOwner) return;
+  const targets = Array.from(game.user.targets ?? []).filter((tk) => tk.actor?.isOfType?.("character") && tk.actor.id !== rider.id);
+  if (!targets.length) {
+    if (carrierOf(rider)) return rider.unsetFlag(MODULE_ID, "carry");
+    ui.notifications.warn(t("needTarget", { name: rider.name }));
+    return;
+  }
+  if (targets.length > 1) { ui.notifications.warn(t("oneTarget")); return; }
+  const carrier = targets[0].actor;
+  if (RIDER_SIZES.has(carrier.size)) { ui.notifications.warn(t("tooSmall", { name: carrier.name })); return; }
+  if (carrier.getFlag(MODULE_ID, "carry")) { ui.notifications.warn(t("carrierRiding", { name: carrier.name })); return; }
+  await rider.setFlag(MODULE_ID, "carry", { by: carrier.id, at: Date.now() });
 }
 
 let weightTimer = null;
@@ -142,8 +157,30 @@ function refreshWeightSoon(rider) {
 }
 
 export function registerCarry() {
-  // A small character dropped onto a bigger one climbs on, dragged off climbs
-  // down; a carrier's move takes the rider along.
+  Hooks.on("preCreateChatMessage", (message, data, options) => stampOrigin(options));
+  Hooks.on("createChatMessage", (message, options) => {
+    try {
+      if (!setting(SETTINGS.CARRY) || !fromThisTab(options)) return;
+      if (message.item?.slug !== "climb-on-back") return;
+      climbAction(message).catch((e) => warn("Climb on failed.", e));
+    } catch (error) {
+      warn("Climb action hook failed.", error);
+    }
+  });
+
+  // The rider's flag changed: the GM tab brings tokens and weight in line.
+  Hooks.on("updateActor", (actor, changes) => {
+    try {
+      const flags = changes?.flags?.[MODULE_ID];
+      if (!flags || !Object.keys(flags).some((k) => k.endsWith("carry"))) return;
+      if (!isServer() || !setting(SETTINGS.CARRY)) return;
+      once(actor.id, () => reconcile(actor)).catch((e) => warn("Carry update failed.", e));
+    } catch (error) {
+      warn("Carry actor hook failed.", error);
+    }
+  });
+
+  // A carrier's move takes the rider along; a rider dragged anywhere climbs down.
   Hooks.on("updateToken", (token, changes, options) => {
     try {
       if (!isServer() || !setting(SETTINGS.CARRY) || options?.raccoonCarry) return;
@@ -151,14 +188,13 @@ export function registerCarry() {
       if (!moved && !("elevation" in changes || "level" in changes)) return;
       const actor = token.actor;
       if (!actor?.isOfType?.("character")) return;
-      const at = { x: changes.x ?? token._source.x, y: changes.y ?? token._source.y, elevation: changes.elevation ?? token._source.elevation };
-      if (RIDER_SIZES.has(actor.size) && moved) {
-        const host = hostUnder(token, at)?.actor ?? null;
-        const current = carrierOf(actor);
-        once(actor.id, () => (host ? mount(actor, host) : current ? dismount(actor, current) : null))
-          .catch((e) => warn("Climbing on or off failed.", e));
+      if (moved && carrierOf(actor) && token.getFlag(MODULE_ID, "carrySize")) {
+        actor.unsetFlag(MODULE_ID, "carry").catch((e) => warn("Climb down failed.", e));
         return;
       }
+      // In Foundry 14 the document still reads the square it left while a move
+      // is being carried out; the move itself has the new one.
+      const at = { x: changes.x ?? token._source.x, y: changes.y ?? token._source.y, elevation: changes.elevation ?? token._source.elevation };
       for (const r of ridersOf(actor)) placeRider(r, actor, token.parent, at).catch((e) => warn("Rider follow failed.", e));
     } catch (error) {
       warn("Carry token hook failed.", error);
@@ -187,6 +223,19 @@ export function registerCarry() {
       /** Run the GM side directly, in any tab: for tests and repairs. */
       mount: (riderRef, carrierRef) => mount(find(riderRef), find(carrierRef)),
       dismount: (riderRef) => { const r = find(riderRef); return dismount(r, carrierOf(r)); },
+      /** The action item to put on a rider's sheet. */
+      actionData: () => ({
+        name: t("actionName"),
+        type: "action",
+        img: "icons/svg/up.svg",
+        system: {
+          slug: "climb-on-back",
+          actionType: { value: "action" },
+          actions: { value: 1 },
+          traits: { value: ["move"] },
+          description: { value: `<p>${t("actionDescription")}</p>` },
+        },
+      }),
     };
   });
 }

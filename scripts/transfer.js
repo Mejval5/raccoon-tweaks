@@ -44,9 +44,11 @@ export function registerTransfer() {
       const flags = changes?.flags?.[MODULE_ID];
       if (!flags) return;
       if (flags[REQUEST] && game.user === game.users.activeGM && !VISITOR) {
-        serve(actor, flags[REQUEST], userId).catch((e) => warn("Relayed hand-over failed.", e));
+        serve(actor, actor.getFlag(MODULE_ID, REQUEST) ?? flags[REQUEST], userId).catch((e) => warn("Relayed hand-over failed.", e));
       }
-      if (flags[RESULT]) settle(flags[RESULT]);
+      // The full flag, not the change: an update carries only the keys that
+      // differ, so a second success arrived without "ok" and read as a failure ("?").
+      if (flags[RESULT]) settle(actor.getFlag(MODULE_ID, RESULT) ?? flags[RESULT]);
     } catch (error) {
       warn("Hand-over hook failed.", error);
     }
@@ -100,6 +102,8 @@ async function quickHandOver(event, item, target) {
   const id = foundry.utils.randomID();
   const timer = setTimeout(() => {
     if (!pending.delete(id)) return;
+    // Moved after all (the answer got lost, not the item): nothing to say.
+    if (!source.items.get(item.id) || source.items.get(item.id).quantity < item.quantity) return;
     ui.notifications.warn(game.i18n.format("raccoon-tweaks.transfer.noAnswer", { item: item.name, target: target.name }));
     source.unsetFlag(MODULE_ID, REQUEST).catch(() => {});              // do not leave it for a GM tab that opens later
   }, ANSWER_TIMEOUT_MS);
@@ -115,8 +119,8 @@ function settle({ id, ok, reason }) {
   if (!request) return;
   clearTimeout(request.timer);
   pending.delete(id);
-  if (ok) ui.notifications.info(game.i18n.format("raccoon-tweaks.transfer.requested", request));
-  else ui.notifications.warn(game.i18n.format("raccoon-tweaks.transfer.refused", { ...request, reason: reason ?? "?" }));
+  // Dan, 2026-11-11: no popup when it works, only when it really did not.
+  if (!ok) ui.notifications.warn(game.i18n.format("raccoon-tweaks.transfer.refused", { ...request, reason: reason ?? "?" }));
 }
 
 /** GM side: take the request off the actor, do it, write the outcome back. */

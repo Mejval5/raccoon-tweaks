@@ -215,6 +215,15 @@ export function registerCarry() {
   }
 
   Hooks.once("ready", () => {
+    // A GM tab that loads late (or reloads) finishes any climb it missed.
+    if (isServer() && setting(SETTINGS.CARRY)) {
+      setTimeout(() => {
+        const riders = game.actors.filter((a) => a.type === "character" && (carrierOf(a)
+          || game.actors.some((c) => weightItemOf(c, a))
+          || game.scenes.some((sc) => sc.tokens.some((tk) => tk.actorId === a.id && tk.getFlag(MODULE_ID, "carrySize")))));
+        for (const r of riders) once(r.id, () => reconcile(r)).catch((e) => warn("Carry catch-up failed.", e));
+      }, 3000);
+    }
     const api = game.modules.get(MODULE_ID).api ?? (game.modules.get(MODULE_ID).api = {});
     const find = (ref) => game.actors.get(ref) ?? game.actors.find((a) => a.name.toLowerCase().includes(String(ref).toLowerCase()));
     api.carry = {

@@ -12,7 +12,7 @@ export async function generateImage(prompt, overrides = {}) {
   const apiKey = setting(SETTINGS.AI_KEY)?.trim();
   if (!apiKey) throw new Error(game.i18n.localize("raccoon-tweaks.ai.noKey"));
 
-  const model = overrides.model ?? setting(SETTINGS.AI_MODEL)?.trim() ?? "gpt-image-1-mini";
+  const model = overrides.model ?? setting(SETTINGS.AI_MODEL)?.trim() ?? "gpt-image-2.6-sunburst";
   const size = overrides.size ?? setting(SETTINGS.AI_SIZE);
   const quality = overrides.quality ?? setting(SETTINGS.AI_QUALITY);
   const transparent = overrides.transparent ?? setting(SETTINGS.AI_TRANSPARENT);

@@ -213,7 +213,15 @@ export function registerSettings() {
     scope: "world",
     config: true,
     type: String,
-    default: "gpt-image-1-mini",
+    // Dan, 2026-11-11: the 2.6 pair. Sunburst is the default, flare the fast one
+    // (about 7 s against 18 s a picture, same transparent cut-out in a side-by-side test).
+    default: "gpt-image-2.6-sunburst",
+    choices: {
+      "gpt-image-2.6-sunburst": "gpt-image-2.6-sunburst (default)",
+      "gpt-image-2.6-flare": "gpt-image-2.6-flare (fast)",
+      "gpt-image-2": "gpt-image-2 (previous)",
+      "gpt-image-1-mini": "gpt-image-1-mini (cheapest)",
+    },
   });
 
   game.settings.register(MODULE_ID, SETTINGS.AI_SIZE, {

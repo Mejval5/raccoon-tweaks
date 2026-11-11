@@ -27,7 +27,7 @@
       },
       "aiModel": {
         "name": "OpenAI image model",
-        "hint": "For example gpt-image-1-mini, gpt-image-1, gpt-image-1.5 or gpt-image-2. Mini is the cheapest and is usually enough for a token."
+        "hint": "gpt-image-2.6-sunburst is the default; gpt-image-2.6-flare gives the same kind of picture in about a third of the time. The older models stay available."
       },
       "aiSize": {
         "name": "Image size",

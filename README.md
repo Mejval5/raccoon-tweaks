@@ -117,7 +117,7 @@ So the generated portrait is framed exactly once and is ready to save.
 | Setting                           | Scope      | Default                             |
 | --------------------------------- | ---------- | ----------------------------------- |
 | OpenAI API key                    | **client** | empty                               |
-| Image model                       | world      | `gpt-image-1-mini`                  |
+| Image model                       | world      | `gpt-image-2.6-sunburst`            |
 | Image size                        | world      | `1024x1024`                         |
 | Image quality                     | world      | `medium`                            |
 | Campaign context                  | world      | Otari setting preset                |

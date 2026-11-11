@@ -120,6 +120,16 @@ export function registerSettings() {
     default: 5,
   });
 
+  // A small character riding on another's back (carry.js).
+  game.settings.register(MODULE_ID, SETTINGS.CARRY, {
+    name: t("carry.name"),
+    hint: t("carry.hint"),
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
   // Ten real minutes at the table = one ten-minute jump of the world time (world-clock.js).
   game.settings.register(MODULE_ID, SETTINGS.WORLD_CLOCK, {
     name: t("worldClock.name"),

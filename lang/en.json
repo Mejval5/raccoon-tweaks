@@ -124,6 +124,10 @@
       "firearmJam": {
         "name": "Jam chance of a dirty firearm (%)",
         "hint": "Rolled on every attack with a firearm not cleaned today. 0 turns jamming off but keeps the tracking."
+      },
+      "carry": {
+        "name": "Ride on another character's back",
+        "hint": "Drop a Small or Tiny character's token onto a bigger party member's token and it climbs on: the token shrinks, sits on top and moves with the carrier, and the carrier carries the rider's body plus gear, minus 2 Bulk. Drag it off and it climbs down. Carried out by the GM's tab."
       }
     },
     "ai": {
@@ -255,6 +259,10 @@
       "jamDescription": "{weapon} is jammed and cannot fire. Spend an Interact action to clear it, then remove this effect.",
       "actionName": "Clean Firearms",
       "actionDescription": "One hour with the cleaning kit. Your firearms are clean until the end of the day; a dirty firearm may jam on each shot. Posting this action marks them clean."
+    },
+    "carry": {
+      "itemName": "{name} (on the back)",
+      "itemDescription": "{name} rides on your back. Bulk = body by size plus everything {name} carries, minus 2, like a backpack. Drag {name}'s token off yours to set them down."
     }
   }
 }

@@ -153,3 +153,4 @@ body #pf2e-hud-persistent [data-panel="effects"] article {
 .raccoon-firearms.clean { border-color: #4f8f3a; }
 .raccoon-firearms.dirty { border-color: #c9593f; }
 .raccoon-firearms button { flex: 0 0 auto; width: auto; line-height: 1.5; padding: 0 8px; font-size: inherit; }
+

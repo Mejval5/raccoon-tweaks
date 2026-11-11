@@ -53,6 +53,7 @@ export const SETTINGS = {
   SORT_REPAIR: "inventory-order-repair",
   FIREARMS: "firearm-cleaning",
   FIREARM_JAM: "firearm-jam-chance",
+  CARRY: "carry-rider",
   PERF_METER: "perf-meter",
   AUTO_TREAT_WOUNDS: "auto-treat-wounds-immunity",
   AUTO_APPLY_DAMAGE: "auto-apply-damage",

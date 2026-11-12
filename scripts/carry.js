@@ -2,37 +2,54 @@ import { MODULE_ID, SETTINGS, VISITOR, log, warn, stampOrigin, fromThisTab } fro
 import { setting } from "./settings.js";
 
 /**
- * One character riding on another's back: Rikkit on Arnold (session 9).
+ * One character riding on another's back, and towers of them (Rikkit on Arnold,
+ * session 9; anyone on anyone, Dan 2026-11-12: "make them ride in a pyramid").
  *
- * Climbing on is an action (Dan, 2026-11-11: dropping the token on the carrier
- * was unreliable): the rider targets the carrier (T) and posts the action
- * "Climb On" (slug `climb-on-back`) from their sheet. The rider's token jumps
- * onto the carrier's, shrinks to half size, sits in the top-right corner drawn
- * above, and from then on moves with it.
+ * - Climbing on: the rider targets the carrier (T) and posts the action
+ *   "Climb On" (slug `climb-on-back`). The rider's token jumps onto the
+ *   carrier's at half the carrier's size (never below a quarter square), sits in
+ *   one of its corners (top-right, top-left, bottom-right, bottom-left, in the
+ *   order they climbed on) drawn above it, and from then on moves with it.
+ * - Towers: a rider can carry riders of their own; moving the bottom one moves
+ *   the whole tower, each storey half the size of the one below.
+ * - Loops are refused: nobody climbs onto someone who is (directly or further
+ *   down a tower) riding on them. Four riders per back at most.
+ * - Climbing down: drag the rider's token anywhere, or post Climb On with no
+ *   target. The token gets its size back where it stands, and anyone riding on
+ *   it stays on it.
+ * - Weight: the carrier's inventory holds "<rider> (on the back)", Bulk = the
+ *   rider's body by size (Tiny 1, Small 3, Medium 6, Large 12) plus everything
+ *   the rider carries, minus 2, like a backpack (Dan, 2026-11-11). A rider's
+ *   own riders are items in the rider's inventory, so a tower's weight passes
+ *   down to the bottom by itself.
  *
- * Climbing down: drag the rider's token anywhere, or post the same action again
- * with no target.
- *
- * - While riding, the carrier's inventory holds "<rider> (on the back)", whose
- *   Bulk is the rider's body by size (Tiny 1, Small 3, Medium 6) plus everything
- *   the rider carries, minus 2, like a backpack (Dan, 2026-11-11). It follows
- *   the rider's inventory and goes when the rider climbs down.
- *
- * The two characters belong to different players, so everything is done by the
- * active GM's tab (never a visitor tab), off the token and item hooks every
- * client receives. The rider's own tab only writes `flags.raccoon-tweaks.carry =
- * { by }` on the rider (or removes it); the GM tab brings the tokens and the
- * weight in line with that flag. `flags.raccoon-tweaks.carrySize` marks the shrunk token.
+ * The characters belong to different players, so the work is done by the active
+ * GM's tab (never a visitor tab), off the token and item hooks every client
+ * receives. The rider's own tab only writes `flags.raccoon-tweaks.carry = { by }`
+ * on the rider (or removes it). `flags.raccoon-tweaks.carrySize` keeps a shrunk
+ * token's own size.
  */
 const SIZE_BULK = { tiny: 1, sm: 3, med: 6, lg: 12, huge: 24, grg: 48 };
-const RIDER_SIZES = new Set(["tiny", "sm"]);
+const MAX_RIDERS = 4;
 const t = (key, data) => game.i18n.format(`${MODULE_ID}.carry.${key}`, data);
 const isServer = () => game.user === game.users.activeGM && !VISITOR;
 const carrierOf = (rider) => game.actors.get(rider?.getFlag?.(MODULE_ID, "carry")?.by ?? "") ?? null;
-const ridersOf = (carrier) => game.actors.filter((a) => a.type === "character" && a.getFlag(MODULE_ID, "carry")?.by === carrier?.id);
+const ridersOf = (carrier) => game.actors
+  .filter((a) => a.type === "character" && a.getFlag(MODULE_ID, "carry")?.by === carrier?.id)
+  .sort((a, b) => (a.getFlag(MODULE_ID, "carry")?.at ?? 0) - (b.getFlag(MODULE_ID, "carry")?.at ?? 0));
 const weightItemOf = (carrier, rider) => carrier?.items?.find((i) => i.getFlag(MODULE_ID, "carriedRider") === rider?.id) ?? null;
 
-/** Rider's body plus what the rider carries, minus 2, in Bulk (0.1 = light). */
+/** True when `carrier` is `rider`, or rides on `rider` somewhere down the tower. */
+function wouldLoop(rider, carrier) {
+  const seen = new Set();
+  for (let c = carrier; c; c = carrierOf(c)) {
+    if (c.id === rider.id || seen.has(c.id)) return true;
+    seen.add(c.id);
+  }
+  return false;
+}
+
+/** Rider's body plus what the rider carries (their own riders included), minus 2, in Bulk (0.1 = light). */
 export function riderBulk(rider) {
   const body = SIZE_BULK[rider?.size ?? rider?.system?.traits?.size?.value] ?? 3;
   const carried = rider?.inventory?.bulk?.value;
@@ -47,77 +64,117 @@ async function once(key, fn) {
   try { await fn(); } finally { busy.delete(key); }
 }
 
-async function mount(rider, carrier) {
-  if (rider.getFlag(MODULE_ID, "carry")?.by !== carrier.id) {
-    const previous = carrierOf(rider);
-    if (previous) await weightItemOf(previous, rider)?.delete();
-    await rider.setFlag(MODULE_ID, "carry", { by: carrier.id, at: Date.now() });
-  }
+/* ------------------------------------------------------------- weight */
+
+async function putWeight(carrier, rider) {
   const bulk = riderBulk(rider);
   const item = weightItemOf(carrier, rider);
   if (item) {
     if (item.system.bulk.value !== bulk) await item.update({ "system.bulk.value": bulk });
-  } else {
-    await carrier.createEmbeddedDocuments("Item", [{
-      name: t("itemName", { name: rider.name }),
-      type: "equipment",
-      img: rider.prototypeToken?.texture?.src || rider.img,
-      system: {
-        bulk: { value: bulk },
-        quantity: 1,
-        equipped: { carryType: "worn", handsHeld: 0 },
-        description: { value: `<p>${t("itemDescription", { name: rider.name })}</p>` },
-      },
-      flags: { [MODULE_ID]: { carriedRider: rider.id } },
-    }]);
+    return;
   }
-  await placeRider(rider, carrier);
-  log(`${rider.name} rides on ${carrier.name} (Bulk ${bulk}).`);
+  await carrier.createEmbeddedDocuments("Item", [{
+    name: t("itemName", { name: rider.name }),
+    type: "equipment",
+    img: rider.prototypeToken?.texture?.src || rider.img,
+    system: {
+      bulk: { value: bulk },
+      quantity: 1,
+      equipped: { carryType: "worn", handsHeld: 0 },
+      description: { value: `<p>${t("itemDescription", { name: rider.name })}</p>` },
+    },
+    flags: { [MODULE_ID]: { carriedRider: rider.id } },
+  }]);
 }
 
-/** Off the back: the weight goes, the flag goes, the tokens get their size back where they stand. */
-async function dismount(rider, carrier) {
+const weightTimers = new Map();
+function refreshWeightSoon(rider) {
+  clearTimeout(weightTimers.get(rider.id));
+  weightTimers.set(rider.id, setTimeout(() => {
+    weightTimers.delete(rider.id);
+    const carrier = carrierOf(rider);
+    if (carrier && weightItemOf(carrier, rider)) putWeight(carrier, rider).catch((e) => warn("Carry weight update failed.", e));
+  }, 500));
+}
+
+/* ------------------------------------------------------------- tokens */
+
+const CORNERS = [[1, 0], [0, 0], [1, 1], [0, 1]];   // top-right, top-left, bottom-right, bottom-left
+
+/**
+ * Put everyone riding on `base` (and on them, and so on) onto `base`'s token on
+ * this scene. `geo` is where base's token is or is about to be: during a move
+ * Foundry 14 still reports the square it left, so the caller passes the new one.
+ */
+async function placeTower(base, scene, geo = null, depth = 0) {
+  if (depth > 8) return;
+  const baseToken = scene.tokens.find((tk) => tk.actorId === base.id);
+  if (!baseToken) return;
+  const g = scene.grid.size;
+  const b = {
+    x: geo?.x ?? baseToken.x, y: geo?.y ?? baseToken.y,
+    w: geo?.w ?? baseToken.width,
+    sort: geo?.sort ?? baseToken.sort ?? 0,
+    elevation: geo?.elevation ?? baseToken.elevation,
+    level: geo?.level ?? baseToken.level,
+  };
+  const riders = ridersOf(base).slice(0, MAX_RIDERS);
+  for (const [i, rider] of riders.entries()) {
+    const riderToken = scene.tokens.find((tk) => tk.actorId === rider.id);
+    if (!riderToken) continue;
+    const own = riderToken.getFlag(MODULE_ID, "carrySize") ?? { width: riderToken.width, height: riderToken.height };
+    const w = Math.max(0.25, b.w * 0.5);
+    const [cx, cy] = CORNERS[i];
+    const r = { x: b.x + cx * (b.w - w) * g, y: b.y + cy * (b.w - w) * g, w, sort: b.sort + 1, elevation: b.elevation, level: b.level };
+    const update = {
+      _id: riderToken.id, width: w, height: w, x: r.x, y: r.y, elevation: r.elevation, sort: r.sort,
+      [`flags.${MODULE_ID}.carrySize`]: own,
+    };
+    if (riderToken.level !== undefined && r.level !== undefined) update.level = r.level;
+    await scene.updateEmbeddedDocuments("Token", [update], { raccoonCarry: true, animate: false });
+    await placeTower(rider, scene, r, depth + 1);
+  }
+}
+
+/** The tower above `base` on every scene where base has a token. */
+async function placeTowerEverywhere(base) {
+  for (const scene of game.scenes) if (scene.tokens.some((tk) => tk.actorId === base.id)) await placeTower(base, scene);
+}
+
+/* -------------------------------------------------------- on and off */
+
+async function mount(rider, carrier) {
+  if (wouldLoop(rider, carrier)) {
+    warn(`${rider.name} cannot ride ${carrier.name}: they would ride each other.`);
+    return dismount(rider, carrierOf(rider));
+  }
+  const previous = carrierOf(rider);
+  if (previous && previous.id !== carrier.id) await weightItemOf(previous, rider)?.delete();
+  if (rider.getFlag(MODULE_ID, "carry")?.by !== carrier.id) await rider.setFlag(MODULE_ID, "carry", { by: carrier.id, at: Date.now() });
+  await putWeight(carrier, rider);
+  await placeTowerEverywhere(carrier);
+  log(`${rider.name} rides on ${carrier.name} (Bulk ${riderBulk(rider)}).`);
+}
+
+/** Off the back: the weight goes, the flag goes, the token gets its size back where it stands; its own riders stay on it. */
+async function dismount(rider, carrier, onlyScene = null, at = null) {
   for (const a of carrier ? [carrier] : game.actors.filter((x) => weightItemOf(x, rider))) {
     const item = weightItemOf(a, rider);
     if (item) await item.delete();
   }
   if (rider.getFlag(MODULE_ID, "carry")) await rider.unsetFlag(MODULE_ID, "carry");
   for (const scene of game.scenes) {
-    const updates = scene.tokens.filter((tk) => tk.actorId === rider.id && tk.getFlag(MODULE_ID, "carrySize"))
-      .map((tk) => {
-        const size = tk.getFlag(MODULE_ID, "carrySize");
-        return { _id: tk.id, width: size.width, height: size.height, [`flags.${MODULE_ID}.-=carrySize`]: null };
-      });
-    if (updates.length) await scene.updateEmbeddedDocuments("Token", updates, { raccoonCarry: true });
+    const tk = scene.tokens.find((x) => x.actorId === rider.id && x.getFlag(MODULE_ID, "carrySize"));
+    if (!tk) continue;
+    const size = tk.getFlag(MODULE_ID, "carrySize");
+    const g = scene.grid.size;
+    // Snap the full-size token to the grid where it was dropped.
+    const x = scene === onlyScene && at ? at.x : tk.x, y = scene === onlyScene && at ? at.y : tk.y;
+    const snapped = { x: Math.round(x / g) * g, y: Math.round(y / g) * g };
+    await scene.updateEmbeddedDocuments("Token", [{ _id: tk.id, width: size.width, height: size.height, ...snapped, [`flags.${MODULE_ID}.-=carrySize`]: null }], { raccoonCarry: true });
+    await placeTower(rider, scene, { ...snapped, w: size.width });
   }
   log(`${rider.name} is off ${carrier?.name ?? "their carrier"}'s back.`);
-}
-
-/** The rider's token, half size and drawn above, in the carrier's top-right corner, on every scene with both. */
-async function placeRider(rider, carrier, onlyScene = null, at = null) {
-  for (const scene of onlyScene ? [onlyScene] : game.scenes) {
-    const carrierToken = scene.tokens.find((tk) => tk.actorId === carrier.id);
-    const riderToken = scene.tokens.find((tk) => tk.actorId === rider.id);
-    if (!carrierToken || !riderToken) continue;
-    const g = scene.grid.size;
-    // Where the carrier ends up: from the move itself when there is one. In
-    // Foundry 14 the document still reads the square it left while the move is
-    // being carried out, which put the rider one step behind (Dan, 2026-11-11).
-    const cx = at?.x ?? carrierToken.x, cy = at?.y ?? carrierToken.y;
-    const size = riderToken.getFlag(MODULE_ID, "carrySize") ?? { width: riderToken.width, height: riderToken.height };
-    const w = 0.5;
-    const update = {
-      _id: riderToken.id,
-      width: w, height: w,
-      x: cx + Math.max(1, carrierToken.width) * g - w * g,
-      y: cy,
-      elevation: at?.elevation ?? carrierToken.elevation,
-      sort: (carrierToken.sort ?? 0) + 1,
-      [`flags.${MODULE_ID}.carrySize`]: size,
-    };
-    if (riderToken.level !== undefined && carrierToken.level !== undefined) update.level = carrierToken.level;
-    await scene.updateEmbeddedDocuments("Token", [update], { raccoonCarry: true, animate: false });
-  }
 }
 
 /** Make the tokens and the weight match the rider's flag. */
@@ -132,8 +189,8 @@ async function reconcile(rider) {
 /** The action, in the tab of whoever posted it: climb onto the one target, or climb down. */
 async function climbAction(message) {
   const rider = message.actor;
-  if (!rider?.isOfType?.("character") || !rider.isOwner) return;
-  const targets = Array.from(game.user.targets ?? []).filter((tk) => tk.actor?.isOfType?.("character") && tk.actor.id !== rider.id);
+  if (!rider?.isOfType?.("character", "npc") || !rider.isOwner) return;
+  const targets = Array.from(game.user.targets ?? []).filter((tk) => tk.actor?.isOfType?.("character", "npc") && tk.actor.id !== rider.id);
   if (!targets.length) {
     if (carrierOf(rider)) return rider.unsetFlag(MODULE_ID, "carry");
     ui.notifications.warn(t("needTarget", { name: rider.name }));
@@ -141,20 +198,12 @@ async function climbAction(message) {
   }
   if (targets.length > 1) { ui.notifications.warn(t("oneTarget")); return; }
   const carrier = targets[0].actor;
-  if (RIDER_SIZES.has(carrier.size)) { ui.notifications.warn(t("tooSmall", { name: carrier.name })); return; }
-  if (carrier.getFlag(MODULE_ID, "carry")) { ui.notifications.warn(t("carrierRiding", { name: carrier.name })); return; }
+  if (wouldLoop(rider, carrier)) { ui.notifications.warn(t("loop", { rider: rider.name, carrier: carrier.name })); return; }
+  if (ridersOf(carrier).filter((r) => r.id !== rider.id).length >= MAX_RIDERS) { ui.notifications.warn(t("noRoom", { name: carrier.name })); return; }
   await rider.setFlag(MODULE_ID, "carry", { by: carrier.id, at: Date.now() });
 }
 
-let weightTimer = null;
-function refreshWeightSoon(rider) {
-  clearTimeout(weightTimer);
-  weightTimer = setTimeout(() => {
-    const item = weightItemOf(carrierOf(rider), rider);
-    const bulk = riderBulk(rider);
-    if (item && item.system.bulk.value !== bulk) item.update({ "system.bulk.value": bulk }).catch((e) => warn("Carry weight update failed.", e));
-  }, 500);
-}
+/* ----------------------------------------------------------- register */
 
 export function registerCarry() {
   Hooks.on("preCreateChatMessage", (message, data, options) => stampOrigin(options));
@@ -180,28 +229,26 @@ export function registerCarry() {
     }
   });
 
-  // A carrier's move takes the rider along; a rider dragged anywhere climbs down.
+  // A carrier's move takes the tower along; a rider dragged anywhere climbs down.
   Hooks.on("updateToken", (token, changes, options) => {
     try {
       if (!isServer() || !setting(SETTINGS.CARRY) || options?.raccoonCarry) return;
       const moved = "x" in changes || "y" in changes;
       if (!moved && !("elevation" in changes || "level" in changes)) return;
       const actor = token.actor;
-      if (!actor?.isOfType?.("character")) return;
+      if (!actor?.isOfType?.("character", "npc")) return;
+      const at = { x: changes.x ?? token._source.x, y: changes.y ?? token._source.y, elevation: changes.elevation ?? token._source.elevation };
       if (moved && carrierOf(actor) && token.getFlag(MODULE_ID, "carrySize")) {
-        actor.unsetFlag(MODULE_ID, "carry").catch((e) => warn("Climb down failed.", e));
+        once(actor.id, () => dismount(actor, carrierOf(actor), token.parent, at)).catch((e) => warn("Climb down failed.", e));
         return;
       }
-      // In Foundry 14 the document still reads the square it left while a move
-      // is being carried out; the move itself has the new one.
-      const at = { x: changes.x ?? token._source.x, y: changes.y ?? token._source.y, elevation: changes.elevation ?? token._source.elevation };
-      for (const r of ridersOf(actor)) placeRider(r, actor, token.parent, at).catch((e) => warn("Rider follow failed.", e));
+      if (ridersOf(actor).length) placeTower(actor, token.parent, at).catch((e) => warn("Rider follow failed.", e));
     } catch (error) {
       warn("Carry token hook failed.", error);
     }
   });
 
-  // The rider's inventory changes: the weight on the carrier follows.
+  // A rider's inventory changes (their own riders included): the weight below follows.
   for (const hook of ["createItem", "updateItem", "deleteItem"]) {
     Hooks.on(hook, (item) => {
       try {
@@ -218,9 +265,9 @@ export function registerCarry() {
     // A GM tab that loads late (or reloads) finishes any climb it missed.
     if (isServer() && setting(SETTINGS.CARRY)) {
       setTimeout(() => {
-        const riders = game.actors.filter((a) => a.type === "character" && (carrierOf(a)
+        const riders = game.actors.filter((a) => carrierOf(a)
           || game.actors.some((c) => weightItemOf(c, a))
-          || game.scenes.some((sc) => sc.tokens.some((tk) => tk.actorId === a.id && tk.getFlag(MODULE_ID, "carrySize")))));
+          || game.scenes.some((sc) => sc.tokens.some((tk) => tk.actorId === a.id && tk.getFlag(MODULE_ID, "carrySize"))));
         for (const r of riders) once(r.id, () => reconcile(r)).catch((e) => warn("Carry catch-up failed.", e));
       }, 3000);
     }
@@ -232,7 +279,7 @@ export function registerCarry() {
       /** Run the GM side directly, in any tab: for tests and repairs. */
       mount: (riderRef, carrierRef) => mount(find(riderRef), find(carrierRef)),
       dismount: (riderRef) => { const r = find(riderRef); return dismount(r, carrierOf(r)); },
-      /** The action item to put on a rider's sheet. */
+      /** The action item to put on a sheet. */
       actionData: () => ({
         name: t("actionName"),
         type: "action",

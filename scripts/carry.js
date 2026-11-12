@@ -178,9 +178,14 @@ async function dismount(rider, carrier, onlyScene = null, at = null) {
     if (!tk) continue;
     const size = tk.getFlag(MODULE_ID, "carrySize");
     const g = scene.grid.size;
-    // Snap the full-size token to the grid where it was dropped.
+    // The full-size token lands on the square under the small token's centre
+    // (by its corner it came out off-centre, Dan 2026-11-12).
     const x = scene === onlyScene && at ? at.x : tk.x, y = scene === onlyScene && at ? at.y : tk.y;
-    const snapped = { x: Math.round(x / g) * g, y: Math.round(y / g) * g };
+    const cx = x + (tk.width * g) / 2, cy = y + (tk.height * g) / 2;
+    const snapped = {
+      x: Math.floor(cx / g - size.width / 2 + 0.5) * g,
+      y: Math.floor(cy / g - size.height / 2 + 0.5) * g,
+    };
     await scene.updateEmbeddedDocuments("Token", [{ _id: tk.id, width: size.width, height: size.height, ...snapped, [`flags.${MODULE_ID}.-=carrySize`]: null }], { raccoonCarry: true });
     await placeTower(rider, scene, { ...snapped, w: size.width });
   }
@@ -239,7 +244,12 @@ export function registerCarry() {
     }
   });
 
-  // A carrier's move takes the tower along; a rider dragged anywhere climbs down.
+  // Where tokens are going, for a moment: when a whole selection moves, the
+  // carrier's document still shows the square it left (Foundry 14), and every
+  // rider looked dropped away (Dan, 2026-11-12).
+  const goingTo = new Map();
+
+  // A carrier's move takes the tower along; a rider dropped off its carrier climbs down.
   Hooks.on("updateToken", (token, changes, options) => {
     try {
       if (!isServer() || !setting(SETTINGS.CARRY) || options?.raccoonCarry) return;
@@ -248,17 +258,32 @@ export function registerCarry() {
       const actor = token.actor;
       if (!actor?.isOfType?.("character", "npc")) return;
       const at = { x: changes.x ?? token._source.x, y: changes.y ?? token._source.y, elevation: changes.elevation ?? token._source.elevation };
+      if (moved) goingTo.set(token.id, { ...at, t: Date.now() });
       if (moved && carrierOf(actor) && token.getFlag(MODULE_ID, "carrySize")) {
-        // Climbs down only when dropped away from the carrier. A move that
-        // leaves the rider on the carrier (dragged along in a selection, a
-        // nudge) just puts the tower back in shape.
-        const carrier = carrierOf(actor);
-        const ct = token.parent.tokens.find((tk) => tk.actorId === carrier.id);
-        const g = token.parent.grid.size;
-        const cx = at.x + (token.width * g) / 2, cy = at.y + (token.height * g) / 2;
-        const onCarrier = ct && cx >= ct.x - g / 2 && cx <= ct.x + (ct.width + 0.5) * g && cy >= ct.y - g / 2 && cy <= ct.y + (ct.height + 0.5) * g;
-        if (onCarrier) placeTower(carrier, token.parent).catch((e) => warn("Rider re-place failed.", e));
-        else once(actor.id, () => dismount(actor, carrier, token.parent, at)).catch((e) => warn("Climb down failed.", e));
+        // Decided a moment later, once the rest of a selection has moved too.
+        // A rider whose centre is still on the carrier's square (where the
+        // carrier is going) stays and the tower is put back in shape; anywhere
+        // else climbs down. Half a square of slack let a drop right beside the
+        // carrier count as "on" it, so climbing down sometimes failed.
+        const scene = token.parent;
+        setTimeout(() => {
+          try {
+            const carrier = carrierOf(actor);
+            if (!carrier) return;
+            const ct = scene.tokens.find((tk) => tk.actorId === carrier.id);
+            const g = scene.grid.size;
+            const fresh = ct && goingTo.get(ct.id);
+            const cpos = fresh && Date.now() - fresh.t < 2000 ? fresh : (ct ? { x: ct.x, y: ct.y, elevation: ct.elevation } : null);
+            const cx = at.x + (token.width * g) / 2, cy = at.y + (token.height * g) / 2;
+            const slack = 0.1 * g;
+            const onCarrier = ct && cpos && cx >= cpos.x - slack && cx <= cpos.x + ct.width * g + slack
+              && cy >= cpos.y - slack && cy <= cpos.y + ct.height * g + slack;
+            if (onCarrier) placeTower(carrier, scene, ct.getFlag(MODULE_ID, "carrySize") ? null : { ...cpos, w: ct.width }).catch((e) => warn("Rider re-place failed.", e));
+            else once(actor.id, () => dismount(actor, carrier, scene, at)).catch((e) => warn("Climb down failed.", e));
+          } catch (error) {
+            warn("Rider move check failed.", error);
+          }
+        }, 300);
         return;
       }
       if (ridersOf(actor).length) placeTower(actor, token.parent, at).catch((e) => warn("Rider follow failed.", e));

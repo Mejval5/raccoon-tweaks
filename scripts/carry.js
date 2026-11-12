@@ -118,8 +118,10 @@ async function placeTower(base, scene, geo = null, depth = 0, animate = false) {
   if (!baseToken) return;
   const g = scene.grid.size;
   const b = {
-    x: geo?.x ?? baseToken.x, y: geo?.y ?? baseToken.y,
-    w: geo?.w ?? baseToken.width,
+    // _source, not the document: in Foundry 14 the document's x/y move along
+    // frame by frame while the token animates; _source is where it is going.
+    x: geo?.x ?? baseToken._source.x, y: geo?.y ?? baseToken._source.y,
+    w: geo?.w ?? baseToken._source.width,
     sort: geo?.sort ?? baseToken.sort ?? 0,
     elevation: geo?.elevation ?? baseToken.elevation,
     level: geo?.level ?? baseToken.level,
@@ -184,7 +186,7 @@ async function dismount(rider, carrier, onlyScene = null, at = null) {
     const g = scene.grid.size;
     // The full-size token lands on the square under the small token's centre
     // (by its corner it came out off-centre, Dan 2026-11-12).
-    const x = scene === onlyScene && at ? at.x : tk.x, y = scene === onlyScene && at ? at.y : tk.y;
+    const x = scene === onlyScene && at ? at.x : tk._source.x, y = scene === onlyScene && at ? at.y : tk._source.y;
     const cx = x + (tk.width * g) / 2, cy = y + (tk.height * g) / 2;
     const snapped = {
       x: Math.floor(cx / g - size.width / 2 + 0.5) * g,
@@ -277,7 +279,7 @@ export function registerCarry() {
             const ct = scene.tokens.find((tk) => tk.actorId === carrier.id);
             const g = scene.grid.size;
             const fresh = ct && goingTo.get(ct.id);
-            const cpos = fresh && Date.now() - fresh.t < 2000 ? fresh : (ct ? { x: ct.x, y: ct.y, elevation: ct.elevation } : null);
+            const cpos = fresh && Date.now() - fresh.t < 2000 ? fresh : (ct ? { x: ct._source.x, y: ct._source.y, elevation: ct._source.elevation } : null);
             const cx = at.x + (token.width * g) / 2, cy = at.y + (token.height * g) / 2;
             const slack = 0.1 * g;
             const onCarrier = ct && cpos && cx >= cpos.x - slack && cx <= cpos.x + ct.width * g + slack
@@ -293,6 +295,41 @@ export function registerCarry() {
       if (ridersOf(actor).length) placeTower(actor, token.parent, at, 0, true).catch((e) => warn("Rider follow failed.", e));
     } catch (error) {
       warn("Carry token hook failed.", error);
+    }
+  });
+
+  // Watchdog, in every window: a rider's glide can stall on a frame drop and
+  // leave the token drawn half way while its document is already on the new
+  // square (Dan, 2026-11-12). 1.5x the expected glide later, a rider still
+  // animating or drawn off its square is stopped and reset to where it really
+  // is, with its vision redone. A newer move of the same token replaces the
+  // pending check, so a token that moves again is never snapped mid-glide.
+  const stallChecks = new Map();
+  Hooks.on("updateToken", (token, changes, options) => {
+    try {
+      if (!options?.raccoonCarry || !options.animate || !("x" in changes || "y" in changes)) return;
+      const obj = token.object;
+      if (!obj || !canvas.ready || token.parent !== canvas.scene) return;
+      const g = token.parent.grid.size;
+      // token.x is still the drawn (start) position here; _source is the destination.
+      const squares = Math.hypot(token._source.x - token.x, token._source.y - token.y) / g;
+      const speed = CONFIG.Token.movement?.defaultSpeed || 6;               // grid spaces per second
+      const wait = Math.max(600, 1.5 * (squares / speed) * 1000 + 250);
+      clearTimeout(stallChecks.get(token.id));
+      stallChecks.set(token.id, setTimeout(() => {
+        stallChecks.delete(token.id);
+        const o = token.object;
+        if (!o || o.destroyed) return;
+        // The document's x/y move with the animation; a stall leaves them half way.
+        const off = Math.abs(token.x - token._source.x) > 1 || Math.abs(token.y - token._source.y) > 1;
+        if (!o.isAnimating && !off) return;
+        try { o.stopAnimation({ reset: true }); } catch { /* already stopped */ }
+        o.renderFlags?.set({ refreshPosition: true, refreshSize: true, refreshVisibility: true });
+        canvas.perception?.update({ initializeVision: true, initializeLighting: true });
+        log(`${token.name}: glide stalled, snapped to its square.`);
+      }, wait));
+    } catch (error) {
+      warn("Rider stall check failed.", error);
     }
   });
 

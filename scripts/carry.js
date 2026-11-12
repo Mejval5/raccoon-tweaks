@@ -112,7 +112,7 @@ const SCALE = 0.7, MIN_SIZE = 0.3;
  * this scene. `geo` is where base's token is or is about to be: during a move
  * Foundry 14 still reports the square it left, so the caller passes the new one.
  */
-async function placeTower(base, scene, geo = null, depth = 0) {
+async function placeTower(base, scene, geo = null, depth = 0, animate = false) {
   if (depth > 8) return;
   const baseToken = scene.tokens.find((tk) => tk.actorId === base.id);
   if (!baseToken) return;
@@ -141,8 +141,12 @@ async function placeTower(base, scene, geo = null, depth = 0) {
       [`flags.${MODULE_ID}.carrySize`]: own,
     };
     if (riderToken.level !== undefined && r.level !== undefined) update.level = r.level;
-    await scene.updateEmbeddedDocuments("Token", [update], { raccoonCarry: true, animate: false });
-    await placeTower(rider, scene, r, depth + 1);
+    // Following a moving carrier the riders glide along at the same pace (and
+    // their vision with them, Dan 2026-11-12); climbing on and off just jumps.
+    // Not awaited when animated, so the storeys start together.
+    const done = scene.updateEmbeddedDocuments("Token", [update], { raccoonCarry: true, animate });
+    if (!animate) await done;
+    await placeTower(rider, scene, r, depth + 1, animate);
   }
 }
 
@@ -286,7 +290,7 @@ export function registerCarry() {
         }, 300);
         return;
       }
-      if (ridersOf(actor).length) placeTower(actor, token.parent, at).catch((e) => warn("Rider follow failed.", e));
+      if (ridersOf(actor).length) placeTower(actor, token.parent, at, 0, true).catch((e) => warn("Rider follow failed.", e));
     } catch (error) {
       warn("Carry token hook failed.", error);
     }

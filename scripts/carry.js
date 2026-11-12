@@ -203,7 +203,19 @@ async function dismount(rider, carrier, onlyScene = null, at = null) {
       y: Math.floor(cy / g - size.height / 2 + 0.5) * g,
     };
     const link = size.link === null || size.link === undefined ? { "flags.pf2e.-=linkToActorSize": null } : { "flags.pf2e.linkToActorSize": size.link };
-    await scene.updateEmbeddedDocuments("Token", [{ _id: tk.id, width: size.width, height: size.height, ...snapped, ...link, [`flags.${MODULE_ID}.-=carrySize`]: null }], { raccoonCarry: true, movement: ghost(tk.id) });
+    // Retried until it sticks: an update that lands while the player's own drag
+    // is still animating can be refused, and Rikkit stayed small after climbing
+    // down (Dan, 2026-11-12).
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        if (tk.object?.isAnimating) await tk.object.movementAnimationPromise?.catch?.(() => {});
+        await scene.updateEmbeddedDocuments("Token", [{ _id: tk.id, width: size.width, height: size.height, ...snapped, ...link, [`flags.${MODULE_ID}.-=carrySize`]: null }], { raccoonCarry: true, movement: ghost(tk.id) });
+      } catch (error) {
+        warn(`Restoring ${rider.name}'s token failed (try ${attempt + 1}), trying again.`, error);
+      }
+      if (!scene.tokens.get(tk.id)?.getFlag(MODULE_ID, "carrySize")) break;
+      await new Promise((resolve) => setTimeout(resolve, 600));
+    }
     await placeTower(rider, scene, { ...snapped, w: size.width });
   }
   log(`${rider.name} is off ${carrier?.name ?? "their carrier"}'s back.`);

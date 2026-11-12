@@ -7,11 +7,11 @@ import { setting } from "./settings.js";
  *
  * - Climbing on: the rider targets the carrier (T) and posts the action
  *   "Climb On" (slug `climb-on-back`). The rider's token jumps onto the
- *   carrier's at half the carrier's size (never below a quarter square), sits in
- *   one of its corners (top-right, top-left, bottom-right, bottom-left, in the
- *   order they climbed on) drawn above it, and from then on moves with it.
+ *   carrier's at 70 % of the carrier's size (never below 0.3 of a square), sits
+ *   centred on its top half sticking up (a second rider left, a third right, a
+ *   fourth below), drawn above it, and from then on moves with it.
  * - Towers: a rider can carry riders of their own; moving the bottom one moves
- *   the whole tower, each storey half the size of the one below.
+ *   the whole tower, each storey 70 % of the one below.
  * - Loops are refused: nobody climbs onto someone who is (directly or further
  *   down a tower) riding on them. Four riders per back at most.
  * - Climbing down: drag the rider's token anywhere, or post Climb On with no
@@ -99,7 +99,13 @@ function refreshWeightSoon(rider) {
 
 /* ------------------------------------------------------------- tokens */
 
-const CORNERS = [[1, 0], [0, 0], [1, 1], [0, 1]];   // top-right, top-left, bottom-right, bottom-left
+// Where a rider sits on the one below, as [x, y] in rider widths from the
+// carrier's top-centre: centred on top sticking up, then left, right, below.
+// Each storey is 70 % of the one below (never under 0.3 of a square), so a
+// tower of four stays readable: 1, 0.7, 0.49, 0.34 (Dan, 2026-11-12: at half
+// size the fourth hit the floor and covered the third).
+const SLOTS = [[0, -0.45], [-0.6, -0.2], [0.6, -0.2], [0, 0.55]];
+const SCALE = 0.7, MIN_SIZE = 0.3;
 
 /**
  * Put everyone riding on `base` (and on them, and so on) onto `base`'s token on
@@ -123,9 +129,13 @@ async function placeTower(base, scene, geo = null, depth = 0) {
     const riderToken = scene.tokens.find((tk) => tk.actorId === rider.id);
     if (!riderToken) continue;
     const own = riderToken.getFlag(MODULE_ID, "carrySize") ?? { width: riderToken.width, height: riderToken.height };
-    const w = Math.max(0.25, b.w * 0.5);
-    const [cx, cy] = CORNERS[i];
-    const r = { x: b.x + cx * (b.w - w) * g, y: b.y + cy * (b.w - w) * g, w, sort: b.sort + 1, elevation: b.elevation, level: b.level };
+    const w = Math.max(MIN_SIZE, b.w * SCALE);
+    const [sx, sy] = SLOTS[i];
+    const r = {
+      x: b.x + ((b.w - w) / 2 + sx * w) * g,
+      y: b.y + sy * w * g,
+      w, sort: b.sort + 1 + i, elevation: b.elevation, level: b.level,
+    };
     const update = {
       _id: riderToken.id, width: w, height: w, x: r.x, y: r.y, elevation: r.elevation, sort: r.sort,
       [`flags.${MODULE_ID}.carrySize`]: own,
@@ -239,7 +249,16 @@ export function registerCarry() {
       if (!actor?.isOfType?.("character", "npc")) return;
       const at = { x: changes.x ?? token._source.x, y: changes.y ?? token._source.y, elevation: changes.elevation ?? token._source.elevation };
       if (moved && carrierOf(actor) && token.getFlag(MODULE_ID, "carrySize")) {
-        once(actor.id, () => dismount(actor, carrierOf(actor), token.parent, at)).catch((e) => warn("Climb down failed.", e));
+        // Climbs down only when dropped away from the carrier. A move that
+        // leaves the rider on the carrier (dragged along in a selection, a
+        // nudge) just puts the tower back in shape.
+        const carrier = carrierOf(actor);
+        const ct = token.parent.tokens.find((tk) => tk.actorId === carrier.id);
+        const g = token.parent.grid.size;
+        const cx = at.x + (token.width * g) / 2, cy = at.y + (token.height * g) / 2;
+        const onCarrier = ct && cx >= ct.x - g / 2 && cx <= ct.x + (ct.width + 0.5) * g && cy >= ct.y - g / 2 && cy <= ct.y + (ct.height + 0.5) * g;
+        if (onCarrier) placeTower(carrier, token.parent).catch((e) => warn("Rider re-place failed.", e));
+        else once(actor.id, () => dismount(actor, carrier, token.parent, at)).catch((e) => warn("Climb down failed.", e));
         return;
       }
       if (ridersOf(actor).length) placeTower(actor, token.parent, at).catch((e) => warn("Rider follow failed.", e));

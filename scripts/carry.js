@@ -31,6 +31,10 @@ import { setting } from "./settings.js";
  */
 const SIZE_BULK = { tiny: 1, sm: 3, med: 6, lg: 12, huge: 24, grg: 48 };
 const MAX_RIDERS = 4;
+// Riders travel as ghosts: their placement is a Foundry 14 movement, and a
+// constrained one stopped at walls a corner of the small token overhung (Dan,
+// 2026-11-12). No ruler, no turning to face the way.
+const ghost = (tokenId) => ({ [tokenId]: { constrainOptions: { ignoreWalls: true, ignoreCost: true }, autoRotate: false, showRuler: false } });
 const t = (key, data) => game.i18n.format(`${MODULE_ID}.carry.${key}`, data);
 const isServer = () => game.user === game.users.activeGM && !VISITOR;
 const carrierOf = (rider) => game.actors.get(rider?.getFlag?.(MODULE_ID, "carry")?.by ?? "") ?? null;
@@ -130,7 +134,12 @@ async function placeTower(base, scene, geo = null, depth = 0, animate = false) {
   for (const [i, rider] of riders.entries()) {
     const riderToken = scene.tokens.find((tk) => tk.actorId === rider.id);
     if (!riderToken) continue;
-    const own = riderToken.getFlag(MODULE_ID, "carrySize") ?? { width: riderToken.width, height: riderToken.height };
+    // PF2e resizes a token to its creature's size whenever the actor changes
+    // (and climbing on or off changes inventories), which blew every storey
+    // back to full size until the next move (Dan, 2026-11-12). The link is off
+    // while riding and comes back as it was.
+    const own = riderToken.getFlag(MODULE_ID, "carrySize")
+      ?? { width: riderToken._source.width, height: riderToken._source.height, link: riderToken._source.flags?.pf2e?.linkToActorSize ?? null };
     const w = Math.max(MIN_SIZE, b.w * SCALE);
     const [sx, sy] = SLOTS[i];
     const r = {
@@ -141,12 +150,13 @@ async function placeTower(base, scene, geo = null, depth = 0, animate = false) {
     const update = {
       _id: riderToken.id, width: w, height: w, x: r.x, y: r.y, elevation: r.elevation, sort: r.sort,
       [`flags.${MODULE_ID}.carrySize`]: own,
+      "flags.pf2e.linkToActorSize": false,
     };
     if (riderToken.level !== undefined && r.level !== undefined) update.level = r.level;
     // Following a moving carrier the riders glide along at the same pace (and
     // their vision with them, Dan 2026-11-12); climbing on and off just jumps.
     // Not awaited when animated, so the storeys start together.
-    const done = scene.updateEmbeddedDocuments("Token", [update], { raccoonCarry: true, animate });
+    const done = scene.updateEmbeddedDocuments("Token", [update], { raccoonCarry: true, animate, movement: ghost(riderToken.id) });
     if (!animate) await done;
     await placeTower(rider, scene, r, depth + 1, animate);
   }
@@ -192,7 +202,8 @@ async function dismount(rider, carrier, onlyScene = null, at = null) {
       x: Math.floor(cx / g - size.width / 2 + 0.5) * g,
       y: Math.floor(cy / g - size.height / 2 + 0.5) * g,
     };
-    await scene.updateEmbeddedDocuments("Token", [{ _id: tk.id, width: size.width, height: size.height, ...snapped, [`flags.${MODULE_ID}.-=carrySize`]: null }], { raccoonCarry: true });
+    const link = size.link === null || size.link === undefined ? { "flags.pf2e.-=linkToActorSize": null } : { "flags.pf2e.linkToActorSize": size.link };
+    await scene.updateEmbeddedDocuments("Token", [{ _id: tk.id, width: size.width, height: size.height, ...snapped, ...link, [`flags.${MODULE_ID}.-=carrySize`]: null }], { raccoonCarry: true, movement: ghost(tk.id) });
     await placeTower(rider, scene, { ...snapped, w: size.width });
   }
   log(`${rider.name} is off ${carrier?.name ?? "their carrier"}'s back.`);
